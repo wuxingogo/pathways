@@ -1,0 +1,114 @@
+using UnityEngine;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+[AddComponentMenu("Camera-Control/Smooth Mouse Look")]
+[Serializable] internal class SmoothMouseLook : MonoBehaviour {
+	[Serializable] internal enum rotAxes : byte { MouseXAndY, MouseX, MouseY }
+	[SerializeField] internal rotAxes rotAxis = rotAxes.MouseXAndY;
+	[SerializeField] internal uint rotCapacity;
+	[SerializeField] internal Vector2 Sensitivity;
+	[SerializeField] internal Vector4 Maxima;
+	[SerializeField] internal Vector2 rotCurrent;
+	[NonSerialized] internal Vector2 rotAverage;
+	[NonSerialized] internal Vector4[] rotCapacitor;
+	[NonSerialized] protected bool hasMouseControl;
+	protected Quaternion originalRotation;
+	protected Quaternion xQuaternion;
+	protected Quaternion yQuaternion;
+	
+	internal SmoothMouseLook (  ) {
+		Sensitivity.Set (2f, 2f);
+		Maxima.Set (-360f, 360f, -60f, 60f);
+		rotCurrent.Set (0f, 0f);
+		rotAverage.Set (0f, 0f);
+		rotCapacity = 16;
+		rotCapacitor = new Vector4[rotCapacity];
+		hasMouseControl = true;
+	}
+	
+	[SerializeField] internal float sensitivityX = 15F;
+	[SerializeField] internal float sensitivityY = 15F;
+	[SerializeField] internal float minimumX = -360F;
+	[SerializeField] internal float maximumX = 360F;
+	[SerializeField] internal float minimumY = -60F;
+	[SerializeField] internal float maximumY = 60F;
+	protected float rotationX = 0F;
+	protected float rotationY = 0F;
+	private List<float> rotArrayX = new List<float>();
+	protected double rotAverageX = 0F;	
+	private List<float> rotArrayY = new List<float>();
+	protected double rotAverageY = 0F;
+ 
+	internal void Update (  ) {
+		if (Input.GetMouseButton(0) && hasMouseControl) LookEnabled (true);
+		if (Input.GetKeyDown ("InventoryToggle")) LookEnabled (false);
+		switch (rotAxis) {
+			case rotAxes.MouseXAndY :		
+				rotAverageY = 0f;
+				rotAverageX = 0f;
+				rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+				rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+				rotArrayY.Add(rotationY);
+				rotArrayX.Add(rotationX);
+				if (rotArrayY.Count >= frameCounter) rotArrayY.RemoveAt(0);
+				if (rotArrayX.Count >= frameCounter) rotArrayX.RemoveAt(0);
+				foreach (int aEntry in rotArrayY) rotAverageY += rotArrayY[aEntry];
+				foreach (int bEntry in rotArrayX) rotAverageX += rotArrayX[bEntry];
+				rotAverageY /= rotArrayY.Count;
+				rotAverageX /= rotArrayX.Count;
+				rotAverageY = ClampAngle (rotAverageY, minimumY, maximumY);
+				rotAverageX = ClampAngle (rotAverageX, minimumX, maximumX);
+				yQuaternion = Quaternion.AngleAxis ((float)rotAverageY, Vector3.left);
+				xQuaternion = Quaternion.AngleAxis ((float)rotAverageX, Vector3.up);
+				transform.localRotation = originalRotation * xQuaternion * yQuaternion;
+			break;
+			case rotAxes.MouseX :
+				rotAverageX = 0f;
+				rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+				rotArrayX.Add(rotationX);
+				if (rotArrayX.Count >= frameCounter) rotArrayX.RemoveAt(0);
+				for(int i = 0; i < rotArrayX.Count; i++) rotAverageX += rotArrayX[i];
+				rotAverageX /= rotArrayX.Count;
+				rotAverageX = ClampAngle (rotAverageX, minimumX, maximumX);
+				xQuaternion = Quaternion.AngleAxis ((float)rotAverageX, Vector3.up);
+				transform.localRotation = originalRotation * xQuaternion;
+			break;
+			case rotAxes.MouseY :
+				rotAverageY = 0f;
+				rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+				rotArrayY.Add(rotationY);
+				if (rotArrayY.Count >= frameCounter) rotArrayY.RemoveAt(0);
+				for(int j = 0; j < rotArrayY.Count; j++) rotAverageY += rotArrayY[j];
+				rotAverageY /= rotArrayY.Count;
+				rotAverageY = ClampAngle (rotAverageY, minimumY, maximumY);
+				yQuaternion = Quaternion.AngleAxis ((float)rotAverageY, Vector3.left);
+				transform.localRotation = originalRotation * yQuaternion;
+			break;
+		}
+	}
+ 
+	internal void Awake (  ) {			
+		if (rigidbody) rigidbody.freezeRotation = true;
+		originalRotation = transform.localRotation;
+	}
+ 
+	public bool LookEnabled ( bool isEnabled ) {
+		Screen.lockCursor = isEnabled;
+		float lookEnabled = ( isEnabled ? 2 : 0 );
+		sensitivityX = lookEnabled;
+		sensitivityY = lookEnabled;
+		hasMouseControl = isEnabled;
+		return isEnabled;
+}
+	
+	internal static double ClampAngle (double angle, double min, double max) {
+		angle = angle % 360;
+		if ((angle >= -360D) && (angle <= 360D)) {
+			if (angle < -360D) angle += 360D;
+			if (angle > 360D) angle -= 360D;			
+		}
+		return Mathf.Clamp ((float)angle, (float)min, (float)max);
+	}
+}

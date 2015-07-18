@@ -1,0 +1,62 @@
+# .gitignore unity
+
+# Unity nonsense
+[Tt]emp/
+[Oo]bj/
+[Bb]uild
+[Ll]ibrary/
+sysinfo.txt
+*.meta
+*.mat
+
+# IDE nonsense
+[Ee]xported[Oo]bj/
+/*.userprefs
+/*.csproj
+/*.pidb
+/*.suo
+/*.sln*
+/*.user
+/*.unityproj
+/*.booproj
+
+# usual nonsense
+.DS_Store*
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+[Tt]humbs.db
+
+# builds
+*.exe
+*.out
+*.app
+
+# lfs
+*.psd
+*.fbx # ok lets party no nevermind
+*.png
+*.jpg
+*.bmp
+*.BMP
+*.exr
+*.mtl
+*.gif
+*.pxm
+*.tga
+*.tif
+*.tiff
+*.ttf
+*.ztl
+*.stl
+*.obj
+*.ogg
+*.wav
+*.aif
+*.aiff
+*.mp3
+*.mp4
+*.anim
+*.zip

@@ -1,0 +1,94 @@
+var inv : Inventory;
+
+var maincam : Transform;
+
+var runSpeed = 8.0;
+var jumpSpeed = 5.0;
+var gravity = 20.0;
+var antiBunnyHopFactor = 1;
+var jumpMoveSpeed = 2.0;
+
+var sensitivityX = 5;
+var sensitivityY = 5;
+var rotationX = 0.0;
+var rotationY = 0.0;
+var rotateSpeed = 2;
+
+private var moveDirection = Vector3.zero;
+private var grounded = false;
+private var controller : CharacterController;
+private var myTransform : Transform;
+private var speed : float;
+private var jumpTimer : int;
+
+
+
+function Start () {
+    controller = GetComponent(CharacterController);
+    myTransform = transform;
+    speed = runSpeed;
+    jumpTimer = antiBunnyHopFactor;
+}
+
+
+function Update () {
+
+
+	var inputX = Input.GetAxis("Horizontal");
+    var inputY = Input.GetAxis("Vertical");
+    // If both horizontal and vertical are used simultaneously, limit speed (if allowed), so the total doesn't exceed normal move speed
+    var inputModifyFactor = (inputX != 0.0 && inputY != 0.0)? .7071 : 1.0;
+    
+    if (grounded) {
+        
+            moveDirection = Vector3(inputX * inputModifyFactor, 0, inputY * inputModifyFactor);
+            moveDirection = myTransform.TransformDirection(moveDirection) * speed;
+        
+
+        // Jump! But only if the jump button has been released and player has been grounded for a given number of frames
+        if (!Input.GetButton("Jump"))
+            jumpTimer++;
+        else if (jumpTimer >= antiBunnyHopFactor) {
+			moveDirection = Vector3(inputX * inputModifyFactor, 0, inputY * inputModifyFactor);
+            moveDirection = myTransform.TransformDirection(moveDirection) * speed * jumpMoveSpeed;
+            moveDirection.y = jumpSpeed;
+            jumpTimer = 0;
+        }
+    }
+
+    // Apply gravity
+    moveDirection.y -= gravity * Time.deltaTime;
+
+    // Move the controller, and set grounded true or false depending on whether we're standing on something
+    grounded = (controller.Move(moveDirection * Time.deltaTime) & CollisionFlags.Below) != 0;
+
+	if (inv.mouseOver == ""){
+		if (Input.GetKey(KeyCode.Mouse1))
+		{
+		rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+		rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+		Screen.lockCursor = true;
+		}
+		if (Input.GetKeyUp(KeyCode.Mouse1))
+		{
+		Screen.lockCursor = false;
+		}
+		rotationY = ClampAngle(rotationY, -60, 80);
+		YQuaternion = Quaternion.AngleAxis (rotationY, Vector3.left);
+		maincam.transform.localRotation = YQuaternion;
+		xQuaternion = Quaternion.AngleAxis (rotationX, Vector3.up);
+		transform.localRotation = xQuaternion;
+	}
+}
+
+static function ClampAngle (angle : float, min : float, max : float) { 
+   if (angle < -360) 
+      angle += 360; 
+   if (angle > 360) 
+      angle -= 360; 
+   return Mathf.Clamp (angle, min, max); 
+} 
+
+
+
+@script RequireComponent(CharacterController)

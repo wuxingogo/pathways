@@ -1,0 +1,108 @@
+using UnityEditor;
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+
+//[CustomEditor( typeof(Weapon) )]
+//[CanEditMultipleObjects]
+
+public class WeaponEditor { // : Editor
+	/*//
+	void ShowOnEnum(string enumFieldName,string enumValue,string fieldName) {
+		ShowOnEnum("type","Type1","type1Var"); //type1Var is only visible when type == Type1
+		ShowOnEnum("type","Type2","type2Var"); //type2Var is only visible when type == Type2
+	}
+	//Add the ShowOnEnum methods in here
+
+    private void SetFieldCondition (  ) {
+        ShowOnEnum("type","Type1","type1Var"); //type1Var is only visible when type == Type1
+        ShowOnEnum("type","Type2","type2Var"); //type2Var is only visible when type == Type2
+	}
+    /// Use this function to set when witch fields should be visible.
+
+    /// When the Enum value is this in the editor, the field is visible.
+
+    /// The Field name that should only be visible when the chosen enum value is set.
+
+    private void ShowOnEnum ( string enumFieldName, string enumValue, string fieldName ) {
+		p_FieldCondition newFieldCondition = new p_FieldCondition ( ) {
+			p_enumFieldName = enumFieldName,
+			p_enumValue = enumValue,
+			p_fieldName = fieldName,
+			p_isValid = true,
+        };
+
+        newFieldCondition.p_errorMsg ="";
+        FieldInfo enumField = target.GetType().GetField(newFieldCondition.p_enumFieldName);
+        if (enumField==null) {
+            newFieldCondition.p_isValid = false;
+            newFieldCondition.p_errorMsg = "Could not find a enum-field named: '"+enumFieldName+"' in '"+target+"'. Make sure you have spelled the field name for the enum correct in the script '"+this.ToString()+"'";
+        }
+		
+        if (newFieldCondition.p_isValid) {
+			var currentEnumValue = enumField.GetValue(target);
+			var enumNames =currentEnumValue.GetType().GetFields();
+			//var enumNames =currentEnumValue.GetType().GetEnumNames();
+			 bool found = false;
+			foreach (FieldInfo enumName in enumNames) {
+				if (enumName.Name == enumValue) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				newFieldCondition.p_isValid = false;
+				newFieldCondition.p_errorMsg = "Could not find the enum value: '"+enumValue+"' in the enum '"+currentEnumValue.GetType().ToString()+"'. Make sure you have spelled the value name correct in the script '"+this.ToString()+"'";
+			}
+        }
+		if (newFieldCondition.p_isValid) {
+			FieldInfo fieldWithCondition = target.GetType().GetField(fieldName);
+			if (fieldWithCondition == null) {
+				newFieldCondition.p_isValid = false;
+				newFieldCondition.p_errorMsg = "Could not find the field: '"+fieldName+"' in '"+target+"'. Make sure you have spelled the field name correct in the script '"+this.ToString()+"'";
+            }
+        } if (!newFieldCondition.p_isValid) {
+			newFieldCondition.p_errorMsg += "\nYour error is within the Custom Editor Script to show/hide fields in the inspector depending on the an Enum."+
+			"\n\n"+this.ToString()+": "+newFieldCondition.ToStringFunction()+"\n";
+		} fieldConditions.Add(newFieldCondition);
+    }
+	
+	private List<p_FieldCondition> fieldConditions;
+
+    public void OnEnable (  ) {
+		fieldConditions = new List<p_FieldCondition>();
+		SetFieldCondition();
+	}
+	
+    public override void OnInspectorGUI (  ) {
+		serializedObject.Update ();
+		var obj = serializedObject.GetIterator ();
+		if (obj.NextVisible (true)) {
+			do {
+				bool shouldBeVisible = true;
+                foreach (var fieldCondition in fieldConditions) {
+					if (! fieldCondition.p_isValid) {
+						Debug.LogError(fieldCondition.p_errorMsg);
+					} else if (fieldCondition.p_fieldName == obj.name) {
+						FieldInfo enumField = target.GetType().GetField(fieldCondition.p_enumFieldName);
+						var currentEnumValue = enumField.GetValue(target);
+						if (currentEnumValue.ToString() != fieldCondition.p_enumValue) shouldBeVisible = false;
+						break;
+					}
+				} if (shouldBeVisible) EditorGUILayout.PropertyField (obj, true);
+            } while(obj.NextVisible (false));
+        }
+		serializedObject.ApplyModifiedProperties ();
+	}
+	
+    private class p_FieldCondition {
+		public string p_enumFieldName{get;set;}
+		public string p_enumValue{get;set;}
+		public string p_fieldName{get;set;}
+		public bool p_isValid{get;set;}
+		public string p_errorMsg{get;set;}
+
+		public string ToStringFunction (  ) { return "'"+p_enumFieldName+"', '"+p_enumValue+"', '"+p_fieldName+"'."; }
+    }//*/
+}

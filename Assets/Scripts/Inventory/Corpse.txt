@@ -1,0 +1,82 @@
+//need a check if the inventory is full and if so do something accordingly, so you know you cant loot it
+//need to make an event to destroy the corpse after everything looted
+//need to make a timer for how long the corpse stays for
+
+
+var looting = false;
+var blah : Transform;
+var blah2 : Transform;
+var inv: Inventory;
+var cinventory : Array;
+
+function OnMouseDown()
+{
+	looting = true;
+}
+function Awake(){
+	cinventory = new Array(8);
+	scriptA = blah.GetComponent("ItemScript");
+	var item = new InventoryItem();
+	item.itemname = scriptA.itemname;
+	item.itemtex = scriptA.itemtex;
+	item.itemtype = scriptA.itemtype;
+	item.equipmenttype = scriptA.equipmenttype;
+	item.usable = scriptA.usable;
+	item.itemweight = scriptA.itemweight;
+	item.droppable = scriptA.droppable;
+	item.itemmodel = scriptA.itemmodel;
+				
+	item.itemstacksize = scriptA.itemstacksize;
+	item.itemstacklimit = scriptA.itemstacklimit;
+	item.showStack = scriptA.showStack;
+				
+	item.bagsize = scriptA.bagsize;
+	item.showBag = scriptA.showBag;
+	item.BagItem = scriptA.BagItem;
+	cinventory[0] = item;
+	
+	scriptB = blah2.GetComponent("ItemScript");
+	var item2 = new InventoryItem();
+	item2.itemname = scriptB.itemname;
+	item2.itemtex = scriptB.itemtex;
+	item2.itemtype = scriptB.itemtype;
+	item2.equipmenttype = scriptB.equipmenttype;
+	item2.usable = scriptB.usable;
+	item2.itemweight = scriptB.itemweight;
+	item2.droppable = scriptB.droppable;
+	item2.itemmodel = scriptB.itemmodel;
+				
+	item2.itemstacksize = 15;
+	item2.itemstacklimit = scriptB.itemstacklimit;
+	item2.showStack = scriptB.showStack;
+				
+	item2.bagsize = scriptB.bagsize;
+	item2.showBag = scriptB.showBag;
+	item2.BagItem = scriptB.BagItem;
+	cinventory[1] = item2;
+}
+
+function OnGUI()
+{
+	GUI.matrix = Matrix4x4.TRS (Vector3.zero, Quaternion.identity, Vector3(Screen.width / 1024.0, Screen.height / 768.0, 1)); 
+	if (looting){
+		if (cinventory[1] != null){
+			Inventory.statInventory.AddItem(cinventory[1]);
+			cinventory[1] = null;
+		}
+		GUI.Box (Rect (345,100,167,220),GUIContent ("Corpse", "this box has a tooltip"));
+		if (GUI.Button(Rect (492,100,20,20),"X")){
+			looting = false;
+		}
+		scriptA = blah.GetComponent("ItemScript");
+		if (GUI.Button(Rect (400,120,32,32),"")){
+			if (cinventory[0] != null){
+				Inventory.statInventory.AddItem(cinventory[0]);
+				cinventory[0] = null;
+			}
+		}
+		if (cinventory[0]!= null){
+			GUI.DrawTexture (Rect(400,120,32,32),cinventory[0].itemtex);
+		}
+	}
+}

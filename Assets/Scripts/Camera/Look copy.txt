@@ -1,0 +1,74 @@
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using NonSerial = System.NonSerializedAttribute;
+using Serial = System.SerializableAttribute;
+
+[AddComponentMenu("Camera-Control/Look")]
+
+[Serial] internal class Look : MonoBehaviour {
+	[Serial] internal enum rotAxes : byte { MouseXAndY, MouseX, MouseY }
+	[SerializeField] internal rotAxes rotAxis = rotAxes.MouseXAndY;
+	
+	[SerializeField] internal int rotCapacity;										[SerializeField] private float viewSensitivity;
+	[SerializeField] private float viewRatio;										[SerializeField] internal bool viewRecenter;
+	[NonSerial] private Vector2 Sensitivity;										[SerializeField] internal Vector4 Maxima;
+	[NonSerial] private Vector2 rotCurrent;										[NonSerial] private Vector2 rotAverage;
+	[NonSerial] private Vector2[] rotCapacitor;								[NonSerial] private uint CapacitorIndex;
+	[NonSerial] private Quaternion originalRotation;							[NonSerial] private Quaternion deltaRotation;							
+//	[NonSerial] internal bool hasMouseControl;							//	[NonSerial] private Vector2 rotDelta;
+//	[NonSerial] private bool usesYawMotion;								//	[NonSerial] private float rotYawMotion;
+	[NonSerial] private Transform rTransform;								//	[NonSerial] private Quaternion rRotation;
+	
+	internal Look (  ) {
+		viewRatio = Screen.width/Screen.height;								Maxima.Set (-360f, 360f, -60f, 60f);
+		rotCapacity = 16;																	CapacitorIndex = 0;
+		viewRecenter = false;														//	hasMouseControl = true;
+	//	usesYawMotion = false;														rotYawMotion = 0;
+	//	rotDelta.x = Sensitivity.x/Screen.width;									rotDelta.y = Sensitivity.x/Screen.height;
+	}
+	
+	private void Awake (  ) {
+		rTransform = transform;
+		originalRotation = rTransform.localRotation;
+		if (rigidbody && !viewRecenter) rigidbody.freezeRotation = true;
+		rotCapacitor = new Vector2[rotCapacity];
+		Sensitivity.Set (viewSensitivity*viewRatio, viewSensitivity);
+	//	rotDelta.x = Sensitivity.x/Screen.width;
+	//	rotDelta.y = Sensitivity.x/Screen.height;
+	//	Sensitivity.Set (rotDelta.x, rotDelta.y);
+	}
+	
+	private void Update (  ) { LookUpdate(); }
+	private void FixedUpdate (  ) { LookUpdate(); }
+	// Potentially Hazardous
+	private void LateUpdate (  ) { LookUpdate();}
+	
+	private void LookUpdate (  ) {
+		//	if (!usesYawMotion) rotYawMotion = 0;
+		if (viewRecenter) rotCurrent.Set ((float)(rotCurrent.x*.5), (float)(rotCurrent.y*.5));
+		rotAverage.Set (0f, 0f);
+		rotCurrent.x += (Input.GetAxisRaw("Mouse X")) * Sensitivity.x;
+		rotCurrent.y += (Input.GetAxisRaw("Mouse Y")) * Sensitivity.y;
+		rotCurrent.y = ClampAngle (rotCurrent.y, Maxima.z, Maxima.w);
+		rotCapacitor[(int)CapacitorIndex] = rotCurrent;
+		foreach (Vector2 Entry in rotCapacitor) rotAverage += Entry;
+		rotAverage /= rotCapacity;
+		rotAverage.x = ClampAngle (rotAverage.x, Maxima.x, Maxima.y);
+		rotAverage.y = ClampAngle (rotAverage.y, Maxima.z, Maxima.w);
+		switch (rotAxis) {
+			case rotAxes.MouseXAndY : deltaRotation = Quaternion.Euler (-rotAverage.y, rotAverage.x, 0); break; //rotYawMotion
+			case rotAxes.MouseX : deltaRotation = Quaternion.Euler (0, rotAverage.x, 0); break; //rotYawMotion
+			case rotAxes.MouseY : deltaRotation = Quaternion.Euler (-rotAverage.y, 0, 0); break; //rotYawMotion
+		} CapacitorIndex++;
+		rTransform.localRotation = originalRotation *deltaRotation;
+		if ((int)CapacitorIndex >= rotCapacity) CapacitorIndex -= (uint)rotCapacity;
+	}
+	
+	private static float ClampAngle ( float angleDelta, float maximaL, float maximaH ) {
+		angleDelta %= 360f;
+		if (angleDelta <= -360f) angleDelta += 360f;
+		if (angleDelta >= 360f) angleDelta -= 360f;
+		return Mathf.Clamp (angleDelta, maximaL, maximaH);
+	}
+}

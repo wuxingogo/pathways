@@ -1,0 +1,91 @@
+/*_( [Ben Scott - bescott@andrew.cmu.edu] | [2014.0801 - TUES 1330] | [CS15.0122 - SS14.TR08] | {[ Global Manager : GUI ]} )_*/
+
+//#define DEBUG
+
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections;
+using System.Collections.Generic;
+using N = System.NonSerializedAttribute;
+using S = UnityEngine.SerializeField;
+using Flags = System.FlagsAttribute;
+using invt = PathwaysEngine.Inventory;
+
+namespace PathwaysEngine.UserInterface {
+	public class Manager : MonoBehaviour {
+		[N] internal bool inputIgnore, hasControl;
+		[Flags] internal enum UIStates : byte { Bag, Pack, Note, Map, Log };
+		[N] internal UIStates UIState;
+		[N] internal Animation am;
+		[N] internal AudioSource au;
+		[N] internal Text rText;
+		[N] internal AudioClip rClick;
+		[N] internal SpecialEvent eventCurrent;
+		[N] internal GameObject panelNote;
+		[N] internal Camera mCAMR;
+
+		internal Manager() {
+			inputIgnore 	= false;
+			hasControl 	= false;
+			UIState 		= UIStates.Bag|UIStates.Map;
+		}
+
+		internal void Awake() {
+			au = GetComponent<AudioSource>();
+			am = GetComponent<Animation>();
+			panelNote = GameObject.FindGameObjectWithTag("Encounter");
+			if (panelNote) {
+				rText = GameObject.FindGameObjectWithTag("EncounterMessage").GetComponent<Text>();
+				panelNote.SetActive(false);
+				rText.text = ((TextAsset)Resources.Load("DefaultTextAsset") as TextAsset).text;
+				DisableEncounter(); 							// petrichor is a cool word
+			}
+		}
+
+		internal void Update() {
+			if (!inputIgnore && Input.GetButtonDown("InventoryToggle")) {
+				Pause.PausePlayer(!hasControl);
+				hasControl = !hasControl;
+			} // if (Mathf.Abs(Input.GetAxis("Mouse ScrollWheel"))>0.1) CycleWeapons(true);
+			if (mCAMR) mCAMR.pixelRect = new Rect(Screen.width-320, 64, 256, 256);
+//			else mCAMR = GameObject.FindGameObjectWithTag("Map Camera").camera;
+		}
+
+#if IMPL
+		internal void ItemButton(invt::Item iterItem, int buttonMouse) {
+			iterItem.Drop();
+			if (buttonMouse==0) iterItem.Get();
+			else if (buttonMouse==1) iterItem.Use();
+			else iterItem.Drop();
+		}
+
+		internal void ItemButton(invt::Weapon iterWeapon, int buttonMouse) {
+			CycleWeapons(true);
+			if (buttonMouse==0) CycleWeapons(true);
+			else if (buttonMouse==1) iterWeapon.Use();
+			else iterWeapon.Drop();
+		}
+
+		internal void ItemButton(invt::Flashlight iterLight, int buttonMouse) {
+			iterLight.Use();
+			if (buttonMouse==0) iterLight.Use();
+			if (buttonMouse==1) iterLight.Drop();
+		}
+#endif
+
+		public void EnableEncounter(SpecialEvent newMessage) {
+			rText.text = newMessage.mainMessage;
+			UIState |= UIStates.Note;
+			eventCurrent = newMessage;
+			panelNote.SetActive(true);
+			Pause.PausePlayer(true,0);
+		}
+
+		public void DisableEncounter() {
+			if (eventCurrent && !eventCurrent.multiUse) eventCurrent.gameObject.SetActive(false);
+			UIState &= ~UIStates.Note;
+			panelNote.SetActive(false);
+			Pause.PausePlayer(false,0);
+		}
+	}
+}

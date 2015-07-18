@@ -1,0 +1,7 @@
+var bank : Inventory;
+
+function OnMouseDown()
+{
+bank.banking = true;
+}
+

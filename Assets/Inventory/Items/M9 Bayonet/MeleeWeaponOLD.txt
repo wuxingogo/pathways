@@ -1,0 +1,49 @@
+#pragma strict
+
+private var Player : GameObject;
+private var PlayerCameras : GameObject[];
+private var PlayerMainCamera : GameObject;
+private var PlayerInventory : Inventory;
+private var WeaponAnimation : Animation;
+private var WeaponCollider : Collider;
+private var TimeSinceTrigger : float = 0;
+
+var HitDamage : float = 100;
+var HitForce : float = 100;
+var WeaponRate : float = .5;
+var WeaponSwingSounds : AudioClip[];
+var WeaponHitSounds : AudioClip[];
+var WeaponSwingAnimations : String[];
+var WeaponEquipped : boolean;
+var WeaponEnabled : boolean;
+
+function Awake () {
+	PlayerCameras = GameObject.FindGameObjectsWithTag("PlayerCamera"); 
+	PlayerMainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+	WeaponAnimation = transform.GetComponentInChildren(Animation);
+	WeaponCollider = transform.GetComponentInChildren(Collider);
+}
+
+function Update () {
+	TimeSinceTrigger = TimeSinceTrigger + Time.deltaTime;
+	if (Time.timeScale != 0) {
+	if (Input.GetMouseButtonDown(0) && WeaponEquipped && WeaponEnabled) Swing(true);
+	}
+}
+
+function Swing (CanSwing : boolean) {
+	if (!WeaponAnimation.isPlaying && CanSwing) {
+		WeaponAnimation.Play(WeaponSwingAnimations[Random.Range(0, WeaponSwingAnimations.length)]);
+		//yield; while (animation.isPlaying) yield;
+		audio.PlayOneShot (WeaponSwingSounds[Random.Range(0, WeaponSwingSounds.length)]);
+	}
+}
+
+function OnTriggerEnter (Entrant : Collider) {
+	if (Entrant.gameObject.tag != "Player" && TimeSinceTrigger > WeaponRate) {
+		audio.PlayOneShot (WeaponHitSounds[Random.Range(0, WeaponHitSounds.length)]);
+		Entrant.transform.SendMessageUpwards("ApplyDamage", HitDamage, SendMessageOptions.DontRequireReceiver);
+		Entrant.gameObject.GetComponent(Rigidbody).AddForce(Vector3.up*HitForce);
+		TimeSinceTrigger = 0;
+	}
+}

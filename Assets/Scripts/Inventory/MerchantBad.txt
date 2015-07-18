@@ -1,0 +1,17 @@
+var shoping = false;
+
+function OnMouseDown()
+{
+shoping = true;
+}
+
+function OnGUI()
+{
+	GUI.matrix = Matrix4x4.TRS (Vector3.zero, Quaternion.identity, Vector3(Screen.width / 1024.0, Screen.height / 768.0, 1)); 
+	if (shoping){
+		GUI.Box (Rect (345,100,167,220),GUIContent ("Merchant", "this box has a tooltip"));
+		if (GUI.Button(Rect (492,100,20,20),"X")){
+			shoping = false;
+		}
+	}
+}

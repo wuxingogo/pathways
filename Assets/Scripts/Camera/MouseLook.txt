@@ -1,0 +1,63 @@
+#pragma strict
+
+@script AddComponentMenu ("Camera-Control/Mouse Look")
+enum RotationalAxes {MouseXAndY, MouseX, MouseY}
+var RotationalAxis = RotationalAxes.MouseXAndY;
+
+var offsetY = 0;
+var sensitivityX : float = 2;
+var sensitivityY : float = 2;
+var minimumX : float = -360;
+var maximumX : float = 360;
+var minimumY : float = -60;
+var maximumY : float = 60;
+var rotationX : float = 0;
+var rotationY : float = 0;
+
+private var originalRotation : Quaternion;
+var GameIsRunning : boolean = true;
+
+function Start () {
+	if (rigidbody) rigidbody.freezeRotation = true;
+	originalRotation = transform.localRotation;
+}
+
+function Update () {
+	if (Input.GetMouseButton(0) && GameIsRunning) Screen.lockCursor = true;
+	if (Input.GetKeyDown ("escape")) Screen.lockCursor = false;
+	switch (RotationalAxis) {
+		case (RotationalAxes.MouseXAndY) :
+			rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+			rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+			rotationX = ClampAngle (rotationX, minimumX, maximumX);
+			rotationY = ClampAngle (rotationY, minimumY, maximumY);
+			var xQuaternion = Quaternion.AngleAxis (rotationX, Vector3.up);
+			var yQuaternion = Quaternion.AngleAxis (rotationY, Vector3.left);
+			transform.localRotation = originalRotation * xQuaternion * yQuaternion;
+		break;
+		case (RotationalAxes.MouseX) :
+			rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+			rotationX = ClampAngle (rotationX, minimumX, maximumX);
+			xQuaternion = Quaternion.AngleAxis (rotationX, Vector3.up);
+			transform.localRotation = originalRotation * xQuaternion;
+		break;
+		case (RotationalAxes.MouseY) :
+			rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+			rotationY = ClampAngle (rotationY, minimumY, maximumY)+offsetY;
+			yQuaternion = Quaternion.AngleAxis (rotationY, Vector3.left);
+			transform.localRotation = originalRotation * yQuaternion;
+		break;
+	}	offsetY = 0;	
+}
+
+function LookIsEnabled (MethodOn : boolean)	{
+	var EnabledLook = (MethodOn ? 2 : 0 );
+	sensitivityX = EnabledLook;
+	sensitivityY = EnabledLook;
+}
+
+static function ClampAngle (angle : float, min : float, max : float) : float {
+	if (angle < -360.0) angle += 360.0;
+	if (angle > 360.0) angle -= 360.0;
+	return Mathf.Clamp (angle, min, max);
+}

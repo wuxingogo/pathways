@@ -1,0 +1,46 @@
+//main vars
+var itemname : String = "Name of item";
+var itemtex : Texture;
+var itemtype : String = "Type of item"; //none, Equip, Bag, Stack, Money
+var equipmenttype : String = "Type of equipment";
+var usable : String = "Type of use";//Consume, Use
+var itemweight : float;
+var droppable : boolean = true;
+var itemmodel : Transform;
+
+//stack vars
+var itemstacksize : int;
+var itemstacklimit : int;
+private var showStack : boolean = false;
+
+//bag vars
+var bagsize : int;
+private var showBag : boolean = false;
+var BagItem = new Array(28);//put the maximum size of any bag in game here
+
+
+function OnMouseDown()
+{
+
+	var item = new InventoryItem();
+	item.worldObject = gameObject;
+	item.itemname = itemname;
+	item.itemtex = itemtex;
+	item.itemtype = itemtype;
+	item.equipmenttype = equipmenttype;
+	item.usable = usable;
+	item.itemweight = itemweight;
+	item.droppable = droppable;
+	item.itemmodel = itemmodel;
+		
+	item.itemstacksize = itemstacksize;
+	item.itemstacklimit = itemstacklimit;
+	item.showStack = showStack;
+		
+	item.bagsize = bagsize;
+	item.showBag = showBag;
+	item.BagItem = BagItem;
+
+	Inventory.statInventory.AddItem(item);
+	
+}

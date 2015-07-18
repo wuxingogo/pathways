@@ -1,0 +1,2097 @@
+/*
+
+how to check if you are over any gui element
+can you not repain certain gui elements
+is it more conveniant to just do checks if mouse is in certain place then if it is use mouse down and what not?
+
+Cache & Cull! Anything that doesn't change or doesn't change often should be member variables, and anything that doesn't render at all 
+(be it a message box or an item in a list that isnt on-screen) should be culled and ignored by OnGUI. 
+
+http://www.unifycommunity.com/wiki/index.php?title=GUIx
+
+*/
+
+
+//checks to see if the mouse has an item so it can pick one up or not
+//need to make it so you cant use consumables from the bdank
+//need distance checking for the corpse,bdank,merchant,give,trade
+//need to make the tooltip work properly with the bdank
+
+//OPTIMASATIONS
+//some arrays I may not need to pass
+//see if I can do anything about all the temp
+//rename variables and everything better
+//for loops are better optimasation fps wise so use that and less function calls
+
+
+// Going to need manual for controls
+//b opens 1 bag
+//shift b opens all bags
+//Input.GetKeyDown(KeyCode.B)
+//Input.GetKeyDown(KeyCode.RightShift)
+//Input.GetKeyDown(KeyCode.LeftShift)
+
+//FEATURES
+//have it so that you have an item prefab then you have prefab meshes and then prefab enchantments? This way you dont have to carry items all around they stay in arrays and when you drop them or equip them they get shown.
+//maybe then on create it instantiates the correct prefab for the mesh
+//need to make it so that you can make a link to it for example putting an item in the toolbar so that you can link to it to use, some sort of drag and drop option
+//Need a better item amount selector that goes over other stuff IF the tooltip says something special disable useability for that items
+//destroy drop cancel?
+//need to add more functions for better organisation
+//maybe more scripts too
+//maybe rewrite the hole thing
+//need to make 2hander, offhader, 1hander
+//class restrictions?
+//race restrictions?
+//equipment armor type cloth
+//picking up items while item is in hand is something wrong ........should I do a check and just make it so that it goes into the mouse instead of inventory
+
+//different class vars? or just one and one script?
+//comment everything
+
+
+//This makes the script a global script so that anyone can acces it
+static var statInventory : Inventory;
+
+//This is to check if the mouse is over the item to display the info, it takes the tooltip and compares it
+var mouseOver : String; 
+
+//This is just a toggle to see if the inventory screen is active or not
+var inventorystate = true;
+//This is the 8 slot main inventory
+var inventory : Array;
+//This is the equiped items inventory
+var EquipedItem : Array;
+//This is the money array
+var inventorymoney : Array;
+public var emptyTex : Texture;
+var bagtexture : Texture;
+var iconSize = 36;
+var spacing = 4;
+//This is the object the mouse is carrying
+var mouseitem = null;
+//This is the item being displayed in the tooltip
+private var tooltipitem1 = null;
+private var tooltipitem2 = null;
+private var tooltipitem3 = null;
+private var tooltipx1 = 0.0;
+private var tooltipy1 = 0.0;
+private var tooltipx2 = 0.0;
+private var tooltipy2 = 0.0;
+private var tooltipx3 = 0.0;
+private var tooltipy3 = 0.0;
+
+var stackamount = 1;
+private var readytodrop = false;
+var mouseheld = true;
+
+var togglefullscreen = "Off";
+var totalweight = "";
+
+class InventoryItem
+{
+	var worldObject : GameObject;
+	var itemname : String;
+	var itemtex : Texture;
+	var itemtype : String;
+	var equipmenttype : String;
+	var usable : String;
+	var itemweight : float;
+	var droppable : boolean;
+	var itemmodel : Transform;
+	
+	var itemstacksize : int;
+	var itemstacklimit : int;
+	var showStack : boolean;
+	
+	var bagsize : int;
+	var showBag : boolean;
+	var BagItem : Array;
+}
+
+
+function Awake()
+{
+	statInventory = this;
+	inventory = new Array(8);
+	EquipedItem = new Array(20);
+	EquipedItem[0] = null;
+	inventorymoney = new Array(4);
+}
+
+
+function OnGUI()
+{
+
+	ix = Input.mousePosition.x; 
+	iy = Input.mousePosition.y; 
+    
+	GUI.matrix = Matrix4x4.TRS (Vector3.zero, Quaternion.identity, Vector3(Screen.width / 1024.0, Screen.height / 768.0, 1)); 
+	var transMouse = GUI.matrix.inverse.MultiplyPoint3x4(Vector3(ix, Screen.height - iy, 1)); 
+
+
+
+	if (Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Mouse1) || Input.GetKeyDown(KeyCode.Mouse2)) {
+		mouseheld = false;
+	}
+	if (Input.GetKeyUp(KeyCode.Mouse0) || Input.GetKeyUp(KeyCode.Mouse1) || Input.GetKeyUp(KeyCode.Mouse2)) {
+		mouseheld = true;
+	}
+
+
+	if (GUI.Button(Rect (10,700,70,20),GUIContent ("Inventory", "this box has a tooltip"))){
+		if (inventorystate){
+			inventorystate = false;
+		} else {
+			inventorystate = true;
+		}
+	}
+
+	if (inventorystate)
+	{
+		//GUI.Box (Rect (684,100,335,470),"Trade");
+		//GUI.Box (Rect (5,100,674,470),"Tome");
+
+		GUI.Box (Rect (5,100,335,470),GUIContent ("Character", "this box has a tooltip"));
+		if (GUI.Button(Rect (320,100,20,20),"X")){
+			inventorystate = false;
+		}
+		
+		//item weight:
+		//need to calculate it all the time cuz if sometheing goes in a bag then its got a diff weigth if the bag has a weight reduction
+		totalweight = calculateweight();
+		GUI.Label (Rect(200,430,100,25),"Weight: " + totalweight);
+		
+
+		GUI.Button(Rect(245,495,20,20),"C");
+		var copper = "";
+		if (inventorymoney[0] != null){
+			copper = copper + inventorymoney[0].itemstacksize;
+			GUI.Label(Rect(266,495,60,20),copper);
+		} else {
+			GUI.Label(Rect(266,495,60,20),"0");
+		}
+		
+		GUI.Button(Rect(173,495,20,20),"S");
+		var silver = "";
+		if (inventorymoney[1] != null){
+			silver = silver + inventorymoney[1].itemstacksize;
+			GUI.Label(Rect(194,495,60,20),silver);
+		} else {
+			GUI.Label(Rect(194,495,60,20),"0");
+		}
+		
+		GUI.Button(Rect(101,495,20,20),"G");
+		var gold = "";
+		if (inventorymoney[2] != null){
+			gold = gold + inventorymoney[2].itemstacksize;
+			GUI.Label(Rect(121,495,60,20),gold);
+		} else {
+			GUI.Label(Rect(121,495,60,20),"0");
+		}
+		
+		GUI.Button(Rect(29,495,20,20),"P");
+		var platinum = "";
+		if (inventorymoney[3] != null){
+			platinum = platinum + inventorymoney[3].itemstacksize;
+			GUI.Label(Rect(50,495,60,20),platinum);
+		} else {
+			GUI.Label(Rect(50,495,60,20),"0");
+		}
+		
+		
+		equipedItemSlot(0,25,160,"Head");
+		equipedItemSlot(1,25,197,"Neck");
+		equipedItemSlot(2,25,234,"Shoulders");
+		equipedItemSlot(3,25,271,"Back");
+		equipedItemSlot(4,25,308,"Chest");
+		equipedItemSlot(5,25,345,"Waist");
+		equipedItemSlot(6,25,382,"Legs");
+		equipedItemSlot(7,25,419,"Feet");
+		
+		equipedItemSlot(8,275,160,"Arms");
+		equipedItemSlot(9,275,197,"Hands");
+		equipedItemSlot(10,275,234,"Wrist");
+		equipedItemSlot(11,275,271,"Wrist");
+		equipedItemSlot(12,275,308,"Finger");
+		equipedItemSlot(13,275,345,"Finger");
+		equipedItemSlot(14,275,382,"Ear");
+		equipedItemSlot(15,275,419,"Ear");
+		
+		equipedItemSlot(16,99,456,"Primary");
+		equipedItemSlot(17,136,456,"Secondary");
+		equipedItemSlot(18,173,456,"Range");
+		equipedItemSlot(19,210,456,"Ammo");
+		
+		
+		inventoryItemSlot(inventory,0,25,520);
+		inventoryItemSlot(inventory,1,62,520);
+		inventoryItemSlot(inventory,2,99,520);
+		inventoryItemSlot(inventory,3,136,520);
+		inventoryItemSlot(inventory,4,173,520);
+		inventoryItemSlot(inventory,5,210,520);
+		inventoryItemSlot(inventory,6,247,520);
+		inventoryItemSlot(inventory,7,284,520);
+
+	}
+	
+		callBag(inventory,0,345,100);
+		callBag(inventory,1,515,100);
+		callBag(inventory,2,345,400);
+		callBag(inventory,3,515,400);
+		callBag(inventory,4,685,100);
+		callBag(inventory,5,855,100);
+		callBag(inventory,6,685,400);
+		callBag(inventory,7,855,400);
+
+		if (tooltipitem1 != null){
+			GUI.Box(Rect (tooltipx1,tooltipy1,100,100),tooltipitem1.itemname);
+		}
+		tooltipitem1 = null;
+		if (tooltipitem2 != null){
+			GUI.Box(Rect (tooltipx2,tooltipy2,100,100),tooltipitem2.itemname);
+		}
+		tooltipitem2 = null;
+		if (tooltipitem3 != null){
+			GUI.Box(Rect (tooltipx3,tooltipy3,100,100),tooltipitem3.itemname);
+		}
+		tooltipitem3 = null;
+	
+		if (mouseheld){
+			mouseOver = GUI.tooltip; 
+		}
+		
+		if(mouseitem != null){
+			if (mouseOver == ""){//still need to add tooltip to other smaller things muh, this will also work for looking around
+				if(Input.GetKeyDown(KeyCode.Mouse0)){
+					readytodrop = true;
+				}
+				if(Input.GetKeyUp(KeyCode.Mouse0) && readytodrop == true){
+					if(mouseitem.droppable){
+						addnewitem();
+						//CHECK TO SEE IF ITS A NO DROP IF SO DELETE IT
+						mouseitem = null;// need to add like a drop dialog box here to accept or decline
+						readytodrop = false;
+					} else {
+						mouseitem = null;// need to add like a drop dialog box here to accept or decline
+						readytodrop = false;
+					}
+				}
+				GUI.Box(Rect(0,0,64,32),"Droppable");
+			}
+		}
+
+		
+		if (mouseitem != null){
+			Screen.showCursor = false;
+			GUI.DrawTexture (Rect(transMouse.x,transMouse.y,iconSize,iconSize),mouseitem.itemtex);
+		} else {
+			Screen.showCursor = true;
+		}
+	
+}
+
+
+function AddItem( item : InventoryItem )
+{
+	if (item.itemtype == "Money"){
+		if(item.itemname == "Copper"){
+			if (inventorymoney[0] == null){
+				inventorymoney[0] = item;
+				Destroy (item.worldObject);
+				return;
+			} else {
+				inventorymoney[0].itemstacksize = inventorymoney[0].itemstacksize + item.itemstacksize;
+				Destroy (item.worldObject);
+				return;
+			}
+		}
+		if(item.itemname == "Silver"){
+			if (inventorymoney[1] == null){
+				inventorymoney[1] = item;
+				Destroy (item.worldObject);
+				return;
+			} else {
+				inventorymoney[1].itemstacksize = inventorymoney[1].itemstacksize + item.itemstacksize;
+				Destroy (item.worldObject);
+				return;
+			}
+		}
+		if(item.itemname == "Gold"){
+			if (inventorymoney[2] == null){
+				inventorymoney[2] = item;
+				Destroy (item.worldObject);
+				return;
+			} else {
+				inventorymoney[2].itemstacksize = inventorymoney[2].itemstacksize + item.itemstacksize;
+				Destroy (item.worldObject);
+				return;
+			}
+		}
+		if(item.itemname == "Platinum"){
+			if (inventorymoney[3] == null){
+				inventorymoney[3] = item;
+				Destroy (item.worldObject);
+				return;
+			} else {
+				inventorymoney[3].itemstacksize = inventorymoney[3].itemstacksize + item.itemstacksize;
+				Destroy (item.worldObject);
+				return;
+			}
+		}
+	}
+	if ( item.itemtype == "Stack"){
+		for( var i = 0; i < inventory.length; i ++ )
+		{
+			if( inventory[i] != null )
+			{
+				if ( inventory[i].itemtype == "Stack"){
+					if ( inventory[i].itemname == item.itemname ){
+						if (inventory[i].itemstacksize < inventory[i].itemstacklimit){
+							inventory[i].itemstacksize = inventory[i].itemstacksize + item.itemstacksize;
+							if (inventory[i].itemstacksize > inventory[i].itemstacklimit){
+								item.itemstacksize = inventory[i].itemstacksize - inventory[i].itemstacklimit;
+								inventory[i].itemstacksize = inventory[i].itemstacklimit;
+							} else {
+								//need to chech here if together they are larger
+								Destroy (item.worldObject);
+								return;
+							}
+							//do something
+						}
+						// return;
+					}
+				}
+			}
+		}
+		
+		for( var l = 0; l < inventory.length; l ++ )
+		{
+			if( inventory[l] != null ){
+				if( inventory[l].itemtype == "Bag" )
+				{
+					//boo = inventory[k].sizex * inventory[k].sizey;
+					for( var h = 0; h < 28; h ++ ) // THIS HERE IS THE BIGGEST THE BAGS CAN GET
+					{
+						if( inventory[l].BagItem[h] != null ){
+							if ( inventory[l].BagItem[h].itemtype == "Stack"){
+								if ( inventory[l].BagItem[h].itemname == item.itemname ){
+									if (inventory[l].BagItem[h].itemstacksize < inventory[l].BagItem[h].itemstacklimit){
+										inventory[l].BagItem[h].itemstacksize = inventory[l].BagItem[h].itemstacksize + item.itemstacksize;
+										if (inventory[l].BagItem[h].itemstacksize > inventory[l].BagItem[h].itemstacklimit){
+											item.itemstacksize = inventory[l].BagItem[h].itemstacksize - inventory[l].BagItem[h].itemstacklimit;
+											inventory[l].BagItem[h].itemstacksize = inventory[l].BagItem[h].itemstacklimit;
+										} else {
+											//need to chech here if together they are larger
+											Destroy (item.worldObject);
+											return;
+										}
+										//do something
+									}
+									// return;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+
+
+    for( var v = 0; v < inventory.length; v ++ )
+    {
+		if( inventory[v] == null )
+		{
+			inventory[v] = item;
+			Destroy (item.worldObject);
+			return;
+		}
+    }   
+	
+	for( var k = 0; k < inventory.length; k ++ )
+    {
+		if( inventory[k].itemtype == "Bag" )
+		{
+			//boo = inventory[k].sizex * inventory[k].sizey;
+			for( var j = 0; j < 28; j ++ ) // THIS HERE IS THE BIGGEST THE BAGS CAN GET
+			{
+				if( inventory[k].BagItem[j] == null )
+				{
+					inventory[k].BagItem[j] = item;
+					Destroy (item.worldObject);
+					return;
+				}
+			}
+		}
+	}
+	
+	/*
+	if( mouseitem == null )
+	{
+		mouseitem = item;
+		return;
+	}
+	*/
+	//destroy the item that is created in the itemscript so that in memeory it doesnt slow down
+	//doesnt work?
+} 
+	
+	
+function newStack(slot,stackamount,arraypassed)
+{
+
+	var itemtex : Texture;
+	var itemname : String;
+	var itemstacksize : int;
+	var itemstacklimit : int;
+	var showStack : boolean = false;
+
+	worldObject = arraypassed[slot].worldObject;
+	itemtex = arraypassed[slot].itemtex;
+	itemtype = arraypassed[slot].itemtype;
+	itemname = arraypassed[slot].itemname;
+	itemstacksize = stackamount;
+	itemstacklimit = arraypassed[slot].itemstacklimit;
+	itemmodel = arraypassed[slot].itemmodel;
+	itemweight = arraypassed[slot].itemweight;
+
+   var item = new InventoryItem();
+
+	item.worldObject = worldObject;
+	item.itemtex = itemtex;
+	item.itemtype = itemtype;
+	item.itemname = itemname;
+	item.itemstacksize = itemstacksize;
+	item.itemstacklimit = itemstacklimit;
+	item.showStack = showStack;
+	item.itemmodel = itemmodel;
+	item.itemweight = itemweight;
+	
+	mouseitem = item;
+ //  AddItem( item );   
+}
+
+function addnewitem(){
+	/*
+	var worldObject = Instantiate(gameitems, Vector3.zero, Quaternion.identity);
+	//worldObject.transform.position = transform.position;
+	//worldObject.transform.parent = transform;
+	//worldObject.SetActiveRecursively(false);
+	
+	scriptA = worldObject.GetComponent("ItemScript");
+	scriptA.itemname = mouseitem.itemname;
+	scriptA.itemtex = mouseitem.itemtex;
+	scriptA.itemtype = mouseitem.itemtype;
+	scriptA.equipmenttype = mouseitem.equipmenttype;
+	scriptA.usable = mouseitem.usable;
+	scriptA.itemweight = mouseitem.itemweight;
+	scriptA.droppable = mouseitem.droppable;
+	scriptA.itemmodel = mouseitem.itemmodel;
+	scriptA.itemstacksize = mouseitem.itemstacksize;
+	scriptA.itemstacklimit = mouseitem.itemstacklimit;
+	scriptA.showStack = mouseitem.showStack;
+	scriptA.bagsize = mouseitem.bagsize;
+	scriptA.showBag = mouseitem.showBag;
+	scriptA.BagItem = mouseitem.BagItem;
+	*/
+	var blah = Instantiate(mouseitem.itemmodel, Vector3.zero, Quaternion.identity);
+	blah.transform.position = transform.position;
+	scriptA = blah.GetComponent("ItemScript");
+	scriptA.itemname = mouseitem.itemname;
+	scriptA.itemtex = mouseitem.itemtex;
+	scriptA.itemtype = mouseitem.itemtype;
+	scriptA.equipmenttype = mouseitem.equipmenttype;
+	scriptA.usable = mouseitem.usable;
+	scriptA.itemweight = mouseitem.itemweight;
+	scriptA.droppable = mouseitem.droppable;
+	scriptA.itemmodel = mouseitem.itemmodel;
+	scriptA.itemstacksize = mouseitem.itemstacksize;
+	scriptA.itemstacklimit = mouseitem.itemstacklimit;
+	scriptA.showStack = mouseitem.showStack;
+	scriptA.bagsize = mouseitem.bagsize;
+	scriptA.showBag = mouseitem.showBag;
+	scriptA.BagItem = mouseitem.BagItem;
+	
+}
+	
+	
+function inventoryItemSlot(arraypassed,slot,xpos,ypos){
+	tooltipid = "";
+	tooltipid = tooltipid + slot;
+		if (arraypassed[slot] != null && mouseitem == null){
+			if (GUI.Button(Rect(xpos,ypos,iconSize,iconSize),GUIContent ("", tooltipid))){
+				if (Input.GetKeyUp(KeyCode.Mouse0)) {
+					if (arraypassed[slot].itemtype == "Bag"){
+						arraypassed[slot].showBag = false;
+					}
+					stackCheck();
+					mouseitem = arraypassed[slot];
+					arraypassed[slot] = null;
+				}
+				if (Input.GetKeyUp(KeyCode.Mouse1)){
+					if (arraypassed[slot]!= null && arraypassed[slot].itemtype == "Stack"){
+						if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift)){
+							//DO SOMETHING IF SHIFT LEFT CLICK HAPPENS
+							//need to check if there is alredy a tooltip for amount picker if so then we can use any other items put if statements
+							stackamount = 1;
+							stackCheck();
+							arraypassed[slot].showStack = true;
+						}
+					}
+				if (arraypassed[slot]!= null && arraypassed[slot].itemtype == "Bag"){
+					if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift)){
+						openAllBags();
+					} else {
+						if (arraypassed[slot].showBag){
+							arraypassed[slot].showBag = false;
+						} else {
+							arraypassed[slot].showBag = true;
+						}
+					}
+				}
+				if (arraypassed[slot]!= null && arraypassed[slot].itemtype == "Equip"){
+					if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift)){
+						rightClickEquip(arraypassed,slot,true);
+					} else {
+						rightClickEquip(arraypassed,slot,false);
+					}
+				}
+					if (arraypassed[slot] != null && arraypassed[slot].usable == "Consume"){
+						if (arraypassed[slot].itemtype != "Stack"){
+							//check timer
+							Destroy (arraypassed[slot].worldObject);
+							arraypassed[slot] = null;
+							//start timer
+						} else {
+							if (arraypassed[slot].itemstacksize == 1){
+								Destroy (arraypassed[slot].worldObject);
+								arraypassed[slot] = null;
+								//start timer
+							} else {
+								arraypassed[slot].itemstacksize = arraypassed[slot].itemstacksize - 1;
+								//start timer
+							}
+						}
+					}
+					if (arraypassed[slot] != null && arraypassed[slot].usable == "Use"){
+						if (arraypassed[slot].itemtype != "Equip"){
+							//do effect
+							print ("DO EFFECT");
+							//start timer
+						}
+					}
+				}
+			}
+		} else {
+			if (GUI.Button(Rect(xpos,ypos,iconSize,iconSize), GUIContent ("", tooltipid))){
+				if (Input.GetKeyUp(KeyCode.Mouse0)) {
+					if (mouseitem != null){
+						if (arraypassed[slot] != null){
+							if (arraypassed[slot].itemtype == "Bag"){
+								arraypassed[slot].showBag = false;
+							}
+							if (arraypassed[slot].itemtype == "Stack"){
+								arraypassed[slot].showStack = false;
+							}
+						}
+						if (arraypassed[slot] != null && arraypassed[slot].itemtype == "Stack" && mouseitem.itemtype == "Stack" && arraypassed[slot].itemname == mouseitem.itemname ){//&& check if they are both the same type of stack else it
+						
+							if (arraypassed[slot].itemstacksize < arraypassed[slot].itemstacklimit){
+								arraypassed[slot].itemstacksize = arraypassed[slot].itemstacksize + mouseitem.itemstacksize;
+								if (arraypassed[slot].itemstacksize > arraypassed[slot].itemstacklimit){
+									mouseitem.itemstacksize = arraypassed[slot].itemstacksize - arraypassed[slot].itemstacklimit;
+									arraypassed[slot].itemstacksize = arraypassed[slot].itemstacklimit;
+								} else {
+								//need to chech here if together they are larger
+								Destroy (mouseitem.worldObject);
+								mouseitem = null;
+								}
+							//do something
+							} else {
+								//this take the variable from this slot and makes it temporary so we can put it in to mouse cursor
+								var tempaa = arraypassed[slot];
+								//what ever is in cursor will be put in the slot
+								arraypassed[slot] = mouseitem;
+								if (tempaa != null){ //IS THIS NECESARRY????????????
+									mouseitem = tempaa;
+								} else {
+									mouseitem = null;
+								}
+							}
+						} else {
+							//this take the variable from this slot and makes it temporary so we can put it in to mouse cursor
+							var tempa = arraypassed[slot];
+							//what ever is in cursor will be put in the slot
+							arraypassed[slot] = mouseitem;
+							if (tempa != null){ //IS THIS NECESARRY????????????
+								mouseitem = tempa;
+							} else {
+								mouseitem = null;
+							}
+						}
+					}
+				}
+				//this is where we do the logic for right mouse click when we have an item in hand
+				if (Input.GetKeyUp(KeyCode.Mouse1)) {
+					if (arraypassed[slot] != null){
+						if (arraypassed[slot].itemtype == "Bag"){
+							if (arraypassed[slot].showBag){
+								arraypassed[slot].showBag = false;
+							} else {
+								arraypassed[slot].showBag = true;
+							}
+						}
+						if (arraypassed[slot].itemtype == "Equip"){
+							if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift)){
+								rightClickEquip(arraypassed,slot,true);
+							} else {
+								rightClickEquip(arraypassed,slot,false);
+							}
+						}
+						if (arraypassed[slot] != null && arraypassed[slot].usable == "Consume"){
+							if (arraypassed[slot].itemtype != "Stack"){
+								//check timer
+								Destroy (arraypassed[slot].worldObject);
+								arraypassed[slot] = null;
+								//start timer
+							} else {
+								if (arraypassed[slot].itemstacksize == 1){
+									Destroy (arraypassed[slot].worldObject);
+									arraypassed[slot] = null;
+									//start timer
+								} else {
+									arraypassed[slot].itemstacksize = arraypassed[slot].itemstacksize - 1;
+									//start timer
+								}
+							}
+						}
+						if (arraypassed[slot] != null && arraypassed[slot].usable == "Use"){
+							if (arraypassed[slot].itemtype != "Equip"){
+								//do effect
+								print ("DO EFFECT");
+								//start timer
+							}
+						}
+					}
+				}
+			}
+		}
+		if (arraypassed[slot] !=null){
+			GUI.DrawTexture (Rect(xpos,ypos,iconSize,iconSize),arraypassed[slot].itemtex);
+
+			//I may be able to use a style that can do right to left alignment
+			if (arraypassed[slot].itemtype == "Stack"){
+				stacksize = "";
+				stacksize = stacksize + arraypassed[slot].itemstacksize;
+				stackspace = 0;
+				if (stacksize.length == 3){
+					stackspace = 12;
+				}
+				if (stacksize.length == 2){
+					stackspace = 19;
+				}
+				if (stacksize.length == 1){
+					stackspace = 26;
+				}
+				GUI.Label(Rect(xpos+stackspace,ypos+19,iconSize,iconSize),stacksize);
+			}
+		}
+		if (mouseheld){
+			mouseOver = GUI.tooltip; 
+		}
+		if (arraypassed[slot] != null){
+			if (arraypassed[slot].itemtype == "Stack"){
+				if (arraypassed[slot].showStack){
+					aaa = "";
+					aaa = aaa + stackamount;
+					//some kind of drag mouse increase decrease motion
+					GUI.Box (Rect(900,700,100,50),GUIContent("","StackItemSelector"));
+					GUI.DrawTexture (Rect(900,700,100,50),emptyTex);
+					GUI.Label(Rect(940,700,100,100),aaa);
+					if (GUI.Button(Rect(900,710,20,20),"<")){
+						if (stackamount > 1){
+							stackamount --;
+						}
+					}
+					if (GUI.Button(Rect(980,710,20,20),">")){
+						if (stackamount < arraypassed[slot].itemstacklimit){
+							if (stackamount < arraypassed[slot].itemstacksize){
+								stackamount ++;
+							}
+						}
+					}
+					if (GUI.Button(Rect(900,730,50,20),"Okay")){
+						arraypassed[slot].showStack = false;
+						if (arraypassed[slot].itemstacksize == stackamount){
+							arraypassed[slot].itemstacksize = stackamount;
+							mouseitem = arraypassed[slot];
+							arraypassed[slot] = null;
+						} else {
+							arraypassed[slot].itemstacksize = arraypassed[slot].itemstacksize - stackamount;
+							newStack(slot,stackamount,arraypassed);
+						} //when you click on another one you just take the mouse items stack size add it to the inventory and then make the mouse null
+					}// you first check that its not too large otherwise you just add the item to it and then when you click again it would swap them
+					if (GUI.Button(Rect(950,730,50,20),"Cancel")){
+						arraypassed[slot].showStack = false;
+					}
+				}
+			}
+		}
+		itemToolTip(slot,xpos,ypos,arraypassed,tooltipid);
+}
+
+function equipedItemSlot(slot,xpos,ypos,itemname){
+
+	tooltipid = "a";
+	tooltipid = tooltipid + slot;
+
+	if (EquipedItem[slot] == null){
+		if (GUI.Button(Rect(xpos,ypos,iconSize,iconSize), itemname)){
+			if (Input.GetKeyUp(KeyCode.Mouse0)) {
+				if (mouseitem != null && mouseitem.itemtype == "Equip"){
+					if (mouseitem.equipmenttype == itemname){
+						EquipedItem[slot] = mouseitem;
+						mouseitem = null;
+					}
+				}
+			}
+		}
+	} else {
+		if (GUI.Button(Rect(xpos,ypos,iconSize,iconSize),GUIContent (itemname, emptyTex, tooltipid))){
+			if (Input.GetKeyUp(KeyCode.Mouse0)) {
+				if (mouseitem != null){
+					if (mouseitem.itemtype == "Equip"){
+						if (mouseitem.equipmenttype == itemname){
+							var tempb = EquipedItem[slot];
+							EquipedItem[slot] = mouseitem;
+							mouseitem = tempb;
+						}
+					}
+				} else {
+					mouseitem = EquipedItem[slot];
+					EquipedItem[slot] = null;
+				}
+			}
+			if (Input.GetKeyUp(KeyCode.Mouse1)) {
+				if (EquipedItem[slot] != null && EquipedItem[slot].usable == "Use"){//check timer too
+					//do effect
+					print ("DO EFFECT");
+					//start timer
+				}
+			}
+		}
+		if (EquipedItem[slot] !=null ){
+			GUI.DrawTexture (Rect(xpos,ypos,iconSize,iconSize),EquipedItem[slot].itemtex);
+		}
+		if (mouseheld){
+			mouseOver = GUI.tooltip; 
+		}
+		itemToolTip(slot,xpos,ypos,EquipedItem,tooltipid);
+	}
+}
+
+
+
+function rightClickEquip(item,slot,shiftpressed){
+	if (item[slot] != null && item[slot].equipmenttype == "Head"){
+		var tempa = EquipedItem[0];
+		EquipedItem[0] = item[slot];
+		item[slot] = tempa;
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Neck"){
+		var tempb = EquipedItem[1];
+		EquipedItem[1] = item[slot];
+		item[slot] = tempb;
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Shoulders"){
+		var tempc = EquipedItem[2];
+		EquipedItem[2] = item[slot];
+		item[slot] = tempc;
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Back"){
+		var tempd = EquipedItem[3];
+		EquipedItem[3] = item[slot];
+		item[slot] = tempd;
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Chest"){
+		var tempe = EquipedItem[4];
+		EquipedItem[4] = item[slot];
+		item[slot] = tempe;
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Waist"){
+		var tempf = EquipedItem[5];
+		EquipedItem[5] = item[slot];
+		item[slot] = tempf;
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Legs"){
+		var tempg = EquipedItem[6];
+		EquipedItem[6] = item[slot];
+		item[slot] = tempg;
+	}
+		if (item[slot] != null && item[slot].equipmenttype == "Feet"){
+		var temph = EquipedItem[7];
+		EquipedItem[7] = item[slot];
+		item[slot] = temph;
+	}
+	
+	if (item[slot] != null && item[slot].equipmenttype == "Arms"){
+		var tempi = EquipedItem[8];
+		EquipedItem[8] = item[slot];
+		item[slot] = tempi;
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Hands"){
+		var tempj = EquipedItem[9];
+		EquipedItem[9] = item[slot];
+		item[slot] = tempj;
+	}
+	if (shiftpressed == false){
+		if (EquipedItem[10] == null){
+			if (item[slot] != null && item[slot].equipmenttype == "Wrist"){
+				var tempk = EquipedItem[10];
+				EquipedItem[10] = item[slot];
+				item[slot] = tempk;
+			}
+		}
+		if (EquipedItem[10] != null && EquipedItem[11] == null){
+			if (item[slot] != null && item[slot].equipmenttype == "Wirst"){
+				var templ = EquipedItem[11];
+				EquipedItem[11] = item[slot];
+				item[slot] = templ;
+			}
+		}
+		if (EquipedItem[10] != null && EquipedItem[11] != null){
+			if (item[slot] != null && item[slot].equipmenttype == "Wirst"){
+				var tempm = EquipedItem[10];
+				EquipedItem[10] = item[slot];
+				item[slot] = tempm;
+			}
+		}
+	} else {
+		if (EquipedItem[10] == null){
+			if (item[slot] != null && item[slot].equipmenttype == "Wrist"){
+				var tempkk = EquipedItem[10];
+				EquipedItem[10] = item[slot];
+				item[slot] = tempkk;
+			}
+		} else {
+			if (item[slot] != null && item[slot].equipmenttype == "Wirst"){
+				var tempmm = EquipedItem[11];
+				EquipedItem[11] = item[slot];
+				item[slot] = tempmm;
+			}
+		}
+	}
+	if (shiftpressed == false){
+		if (EquipedItem[12] == null){
+			if (item[slot] != null && item[slot].equipmenttype == "Finger"){
+				var tempn = EquipedItem[12];
+				EquipedItem[12] = item[slot];
+				item[slot] = tempn;
+			}
+		}
+		if (EquipedItem[12] != null && EquipedItem[13] == null){
+			if (item[slot] != null && item[slot].equipmenttype == "Finger"){
+				var tempo = EquipedItem[13];
+				EquipedItem[13] = item[slot];
+				item[slot] = tempo;
+			}
+		}
+		if (EquipedItem[12] != null && EquipedItem[13] != null){
+			if (item[slot] != null && item[slot].equipmenttype == "Finger"){
+				var tempp = EquipedItem[12];
+				EquipedItem[12] = item[slot];
+				item[slot] = tempp;
+			}
+		}
+	} else {
+		if (EquipedItem[12] == null){
+			if (item[slot] != null && item[slot].equipmenttype == "Finger"){
+				var tempnn = EquipedItem[12];
+				EquipedItem[12] = item[slot];
+				item[slot] = tempnn;
+			}
+		} else {
+			if (item[slot] != null && item[slot].equipmenttype == "Finger"){
+				var temppp = EquipedItem[13];
+				EquipedItem[13] = item[slot];
+				item[slot] = temppp;
+			}
+		}
+	}
+	if (shiftpressed == false){
+		if (EquipedItem[14] == null){
+			if (item[slot] != null && item[slot].equipmenttype == "Ear"){
+				var tempq = EquipedItem[14];
+				EquipedItem[14] = item[slot];
+				item[slot] = tempq;
+			}
+		}
+		if (EquipedItem[14] != null && EquipedItem[15] == null){
+			if (item[slot] != null && item[slot].equipmenttype == "Ear"){
+				var tempr = EquipedItem[15];
+				EquipedItem[15] = item[slot];
+				item[slot] = tempr;
+			}
+		}
+		if (EquipedItem[14] != null && EquipedItem[15] != null){
+			if (item[slot] != null && item[slot].equipmenttype == "Ear"){
+				var temps = EquipedItem[14];
+				EquipedItem[14] = item[slot];
+				item[slot] = temps;
+			}
+		}
+	} else {
+		if (EquipedItem[14] == null){
+			if (item[slot] != null && item[slot].equipmenttype == "Ear"){
+				var tempqq = EquipedItem[14];
+				EquipedItem[14] = item[slot];
+				item[slot] = tempqq;
+			}
+		} else {
+			if (item[slot] != null && item[slot].equipmenttype == "Ear"){
+				var tempss = EquipedItem[15];
+				EquipedItem[15] = item[slot];
+				item[slot] = tempss;
+			}
+		}
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Primary"){
+		var tempt = EquipedItem[16];
+		EquipedItem[16] = item[slot];
+		item[slot] = tempt;
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Secondary"){
+		var tempu = EquipedItem[17];
+		EquipedItem[17] = item[slot];
+		item[slot] = tempu;
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Range"){
+		var tempv = EquipedItem[18];
+		EquipedItem[18] = item[slot];
+		item[slot] = tempv;
+	}
+	if (item[slot] != null && item[slot].equipmenttype == "Ammo"){
+		var tempw = EquipedItem[19];
+		EquipedItem[19] = item[slot];
+		item[slot] = tempw;
+	}
+}
+
+
+
+
+
+function bagItemSlot(slot,xpos,ypos,bagarray,toolnumber){
+	
+	if (toolnumber == 0){
+		tooltipid = "b";
+	}
+	if (toolnumber == 1){
+		tooltipid = "c";
+	}
+	if (toolnumber == 2){
+		tooltipid = "d";
+	}
+	if (toolnumber == 3){
+		tooltipid = "e";
+	}
+	if (toolnumber == 4){
+		tooltipid = "f";
+	}
+	if (toolnumber == 5){
+		tooltipid = "g";
+	}
+	if (toolnumber== 6){
+		tooltipid = "h";
+	}
+	if (toolnumber == 7){
+		tooltipid = "i";
+	}
+	
+	tooltipid = tooltipid + slot;
+
+	if (bagarray[slot] != null && mouseitem == null){
+	
+		if (GUI.Button(Rect(xpos,ypos,32,32), GUIContent ("", tooltipid))){
+			if (Input.GetKeyUp(KeyCode.Mouse0)) {
+				stackCheck();
+				mouseitem = bagarray[slot];
+				bagarray[slot] = null;
+			}
+			if (Input.GetKeyUp(KeyCode.Mouse1)){
+				if (bagarray[slot] != null){
+					if (bagarray[slot].itemtype == "Stack"){
+						if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift)){
+							//DO SOMETHING IF SHIFT LEFT CLICK HAPPENS
+							stackamount = 1;
+							stackCheck();
+							bagarray[slot].showStack = true;
+						}
+					}
+					if (bagarray[slot].itemtype == "Equip"){
+						if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift)){
+							rightClickEquip(bagarray,slot,true);
+						} else {
+							rightClickEquip(bagarray,slot,false);
+						}
+					}
+					if (bagarray[slot]!= null){
+						if (bagarray[slot] != null && bagarray[slot].usable == "Consume"){
+							if (bagarray[slot].itemtype != "Stack"){
+								//check timer
+								Destroy (bagarray[slot].worldObject);
+								bagarray[slot] = null;
+								//start timer
+							} else {
+								if (bagarray[slot].itemstacksize == 1){
+									Destroy (bagarray[slot].worldObject);
+									bagarray[slot] = null;
+									//start timer
+								} else {
+									bagarray[slot].itemstacksize = bagarray[slot].itemstacksize - 1;
+									//start timer
+								}
+							}
+						}
+						if (bagarray[slot] != null && bagarray[slot].usable == "Use"){
+							if (bagarray[slot].itemtype != "Equip"){
+								//do effect
+								print ("DO EFFECT");
+								//start timer
+							}
+						}
+					}
+				}
+			}
+		}
+		
+	} else {
+		if (GUI.Button(Rect(xpos,ypos,32,32), GUIContent ("", tooltipid))){
+			if (Input.GetKeyUp(KeyCode.Mouse0)) {
+			
+				if (mouseitem != null){	
+					if (mouseitem.itemtype != "Bag"){
+					
+					
+						if (bagarray[slot] != null && bagarray[slot].itemtype == "Stack" && mouseitem.itemtype == "Stack" && bagarray[slot].itemname == mouseitem.itemname ){//&& check if they are both the same type of stack else it
+						
+							if (bagarray[slot].itemstacksize < bagarray[slot].itemstacklimit){
+
+								bagarray[slot].itemstacksize = bagarray[slot].itemstacksize + mouseitem.itemstacksize;
+								if (bagarray[slot].itemstacksize > bagarray[slot].itemstacklimit){
+									mouseitem.itemstacksize = bagarray[slot].itemstacksize - bagarray[slot].itemstacklimit;
+									bagarray[slot].itemstacksize = bagarray[slot].itemstacklimit;
+								} else {
+								//need to chech here if together they are larger
+								Destroy (mouseitem.worldObject);
+								mouseitem = null;
+								}
+							//do something
+							} else {
+								var tempaa = bagarray[slot];
+								//what ever is in cursor will be put in the slot
+								bagarray[slot] = mouseitem;
+								if (tempaa != null){
+									mouseitem = tempaa;
+								} else {
+									mouseitem = null;
+								}
+							}
+						} else {
+							var tempa = bagarray[slot];
+							//what ever is in cursor will be put in the slot
+							bagarray[slot] = mouseitem;
+							if (tempa != null){
+								mouseitem = tempa;
+							} else {
+								mouseitem = null;
+							}
+						}
+					} else {
+						hasitem = bagCheck();
+						if (hasitem == false){
+							var tempb = bagarray[slot];
+							//what ever is in cursor will be put in the slot
+							bagarray[slot] = mouseitem;
+							if (tempb != null){
+								mouseitem = tempb;
+							} else {
+								mouseitem = null;
+							}
+						}
+					}
+				}	
+			}
+			if (Input.GetKeyUp(KeyCode.Mouse1)) {
+				if (bagarray[slot] != null && bagarray[slot].itemtype == "Equip"){
+					if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift)){
+						rightClickEquip(bagarray,slot,true);
+					} else {
+						rightClickEquip(bagarray,slot,false);
+					}
+				}
+				if (bagarray[slot] != null && bagarray[slot].usable == "Consume"){
+					if (bagarray[slot].itemtype != "Stack"){
+						//check timer
+						Destroy (bagarray[slot].worldObject);
+						bagarray[slot] = null;
+						//start timer
+					} else {
+						if (bagarray[slot].itemstacksize == 1){
+							Destroy (bagarray[slot].worldObject);
+							bagarray[slot] = null;
+							//start timer
+						} else {
+							bagarray[slot].itemstacksize = bagarray[slot].itemstacksize - 1;
+							//start timer
+						}
+					}
+				}
+				if (bagarray[slot] != null && bagarray[slot].usable == "Use"){
+					if (bagarray[slot].itemtype != "Equip"){
+						//do effect
+						print ("DO EFFECT");
+						//start timer
+					}
+				}
+			}
+		}
+	}
+	if (bagarray[slot] !=null){
+		GUI.DrawTexture (Rect(xpos,ypos,32,32),bagarray[slot].itemtex);
+		
+		//I may be able to use a style that can do right to left alignment
+		if (bagarray[slot].itemtype == "Stack"){
+			stacksizeb = "";
+			stacksizeb = stacksizeb + bagarray[slot].itemstacksize;
+			stackspace = 0;
+			if (stacksizeb.length == 3){
+				stackspace = 12;
+			}
+			if (stacksizeb.length == 2){
+				stackspace = 19;
+			}
+			if (stacksizeb.length == 1){
+				stackspace = 26;
+			}
+			GUI.Label(Rect(xpos+stackspace,ypos+19,iconSize,iconSize),stacksizeb);
+		}
+		
+	}
+	
+	if (mouseheld){
+		mouseOver = GUI.tooltip; 
+	}
+	if (bagarray[slot] != null){
+		if (bagarray[slot].itemtype == "Stack"){
+			if (bagarray[slot].showStack){
+				aaa = "";
+				aaa = aaa + stackamount;
+				//some kind of drag mouse increase decrease motion
+				GUI.DrawTexture (Rect(900,700,100,50),emptyTex);
+				GUI.Label(Rect(940,700,100,100),aaa);
+				if (GUI.Button(Rect(900,710,20,20),"<")){
+					if (stackamount > 1){
+						stackamount --;
+					}
+				}
+				if (GUI.Button(Rect(980,710,20,20),">")){
+					if (stackamount < bagarray[slot].itemstacklimit){
+						if (stackamount < bagarray[slot].itemstacksize){
+							stackamount ++;
+						}
+					}
+				}
+				if (GUI.Button(Rect(900,730,50,20),"Okay")){
+					bagarray[slot].showStack = false;
+					if (bagarray[slot].itemstacksize == stackamount){
+						bagarray[slot].itemstacksize = stackamount;
+						mouseitem = bagarray[slot];
+						bagarray[slot] = null;
+					} else {
+						bagarray[slot].itemstacksize = bagarray[slot].itemstacksize - stackamount;
+						newStack(slot,stackamount,bagarray);
+					} //when you click on another one you just take the mouse items stack size add it to the inventory and then make the mouse null
+				}// you first check that its not too large otherwise you just add the item to it and then when you click again it would swap them
+				if (GUI.Button(Rect(950,730,50,20),"Cancel")){
+					bagarray[slot].showStack = false;
+				}
+			}
+		}
+	}
+	itemToolTip(slot,xpos,ypos,bagarray,tooltipid);
+}
+
+
+//This is part of the process of makeing a bag
+function makeBag(xpos,ypos,bagsize,bagtex,arraypassed,bagsname,passedarray,slot){
+	slotnumber = -1;
+	GUI.Box (Rect(xpos,ypos,163,bagsize*37 + 35), GUIContent ("", "this box has a tooltip"));//this scales the texture too
+	GUI.DrawTexture (Rect(xpos,ypos,163,bagsize*37 + 35), bagtex);
+	GUI.Label(Rect(xpos,ypos,163,30),bagsname);
+	for(var i = 0; i < bagsize; i++){
+		for(var j = 0; j < 4; j++){//the size of the horizontal bag size
+			slotnumber ++;
+			xx = 32*j + 5*(j+1) + 5 + xpos;
+			yy = 32*i + 5*(i+1) + 30 + ypos;
+			bagItemSlot(slotnumber,xx,yy,arraypassed,slot);
+		}
+	}
+	if (GUI.Button(Rect(xpos + 138,ypos + 5,20,20),"X")){
+		if (passedarray[slot].showBag){
+			passedarray[slot].showBag = false;
+		} else {
+			passedarray[slot].showBag = true;
+		}
+	}
+}
+
+
+//This is just a function that checks if a bag is in an inventory slot and its showbag is set to true, it will call a function to further open the bags and position them accordingly
+function callBag(arraypassed,slot,xpos,ypos){
+	if (arraypassed[slot] != null && arraypassed[slot].itemtype == "Bag" && arraypassed[slot].showBag == true){
+		makeBag(xpos,ypos,arraypassed[slot].bagsize,bagtexture,arraypassed[slot].BagItem,arraypassed[slot].itemname,arraypassed,slot);
+	}
+}
+
+//This checks if there is items in the bag that is in the mouse hand so that we cant put bags with items in to other bags
+function bagCheck(){
+	for(var i= 0; i < mouseitem.BagItem.length; i++){
+		if (mouseitem.BagItem[i] != null){
+			return (true);
+		}
+	}
+	return (false);
+}
+
+function stackCheck(){
+	for(var i= 0; i < inventory.length; i++){
+		if (inventory[i] != null){
+			if (inventory[i].itemtype == "Stack"){
+				if (inventory[i].showStack){
+				inventory[i].showStack = false;
+				}
+			}
+			if (inventory[i].itemtype == "Bag"){
+				for (var k = 0; k < 20; k++){
+					if (inventory[i].BagItem[k] != null){
+						if (inventory[i].BagItem[k].itemtype == "Stack"){
+							inventory[i].BagItem[k].showStack = false;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+//This toggles all bags in inventory when it is called
+function openAllBags(){
+var bagcount = 0;
+var bagsopen = 0;
+	for( var i = 0; i < inventory.length; i ++ ){
+		if (inventory[i] != null){
+			if (inventory[i].itemtype == "Bag"){
+				bagcount ++;
+				if (inventory[i].showBag == true){
+					bagsopen ++;
+				}
+				inventory[i].showBag = true;
+			}
+		}
+	}
+	
+	if (bagcount != bagsopen || bagsopen == 0){
+		for( var k = 0; k < inventory.length; k ++ ){
+			if (inventory[k] != null){
+				if (inventory[k].itemtype == "Bag"){
+					inventory[k].showBag = true;
+				}
+			}
+		}
+	} else {
+		for( var j = 0; j < inventory.length; j ++ ){
+			if (inventory[j] != null){
+				if (inventory[j].itemtype == "Bag"){
+					inventory[j].showBag = false;
+				}
+			}
+		}
+	}
+}
+
+//This is the item tooltip function for dispaying a tooltip when hovering over items
+//CAN PERHAPS PUT THE FIRST IF STATEMENT OUTSIDE OF THIS SO THIS DOESNT RUN
+function itemToolTip(slot,xpos,ypos,arraypassed,tooltipid){
+	if(mouseOver==tooltipid) {
+		if (Input.GetKey(KeyCode.RightShift) == false && Input.GetKey(KeyCode.LeftShift) == false){
+			tooltipitem1 = arraypassed[slot];
+			if (xpos-100 > 0){
+				tooltipx1 = xpos-100;
+			} else {
+				tooltipx1 = xpos + iconSize;
+			}
+			if (ypos-100 > 0){
+				tooltipy1 = ypos-100;
+			} else {
+				tooltipy1 = ypos + iconSize;
+			}
+		} else {
+		
+			if (arraypassed[slot] != null){
+				if (arraypassed[slot].itemtype == "Equip"){
+					if(arraypassed[slot].equipmenttype == "Head"){
+						if (EquipedItem[0] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[0];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[0] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Neck"){
+						if (EquipedItem[1] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[1];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[1] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Shoulders"){
+						if (EquipedItem[2] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[2];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[2] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Back"){
+						if (EquipedItem[3] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[3];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[3] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Chest"){
+						if (EquipedItem[4] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[4];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[4] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Waist"){
+						if (EquipedItem[5] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[5];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[5] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Legs"){
+						if (EquipedItem[6] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[6];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[6] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Feet"){
+						if (EquipedItem[7] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[7];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[7] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Arms"){
+						if (EquipedItem[8] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[8];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[8] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Hands"){
+						if (EquipedItem[9] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[9];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[9] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Wrist"){
+						if (EquipedItem[10] != null){
+							if (EquipedItem[11] != null){
+								tooltipitem1 = arraypassed[slot];
+								tooltipitem2 = EquipedItem[10];
+								tooltipitem3 = EquipedItem[11];
+								if (xpos-300 > 0){
+									tooltipx1 = xpos-100;
+									tooltipx2 = xpos-200;
+									tooltipx3 = xpos-300;
+								} else {
+									tooltipx1 = xpos + iconSize;
+									tooltipx2 = xpos + iconSize + 100;
+									tooltipx3 = xpos + iconSize + 200;
+								}
+								if (ypos-100 > 0){
+									tooltipy1 = ypos-100;
+									tooltipy2 = ypos-100;
+									tooltipy3 = ypos-100;
+								} else {
+									tooltipy1 = ypos + iconSize;
+									tooltipy2 = ypos + iconSize;
+									tooltipy3 = ypos + iconSize;
+								}
+							} else {
+								tooltipitem1 = arraypassed[slot];
+								tooltipitem2 = EquipedItem[10];
+								if (xpos-200 > 0){
+									tooltipx1 = xpos-100;
+									tooltipx2 = xpos-200;
+								} else {
+									tooltipx1 = xpos + iconSize;
+									tooltipx2 = xpos + iconSize + 100;
+								}
+								if (ypos-100 > 0){
+									tooltipy1 = ypos-100;
+									tooltipy2 = ypos-100;
+								} else {
+									tooltipy1 = ypos + iconSize;
+									tooltipy2 = ypos + iconSize;
+								}
+							}
+						} else {
+							if (EquipedItem[11] != null){
+								tooltipitem1 = arraypassed[slot];
+								tooltipitem2 = EquipedItem[11];
+								if (xpos-200 > 0){
+									tooltipx1 = xpos-100;
+									tooltipx2 = xpos-200;
+								} else {
+									tooltipx1 = xpos + iconSize;
+									tooltipx2 = xpos + iconSize + 100;
+								}
+								if (ypos-100 > 0){
+									tooltipy1 = ypos-100;
+									tooltipy2 = ypos-100;
+								} else {
+									tooltipy1 = ypos + iconSize;
+									tooltipy2 = ypos + iconSize;
+								}
+							}
+						}
+						if (EquipedItem[10] == null && EquipedItem[11] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Finger"){
+						if (EquipedItem[12] != null){
+							if (EquipedItem[13] != null){
+								tooltipitem1 = arraypassed[slot];
+								tooltipitem2 = EquipedItem[12];
+								tooltipitem3 = EquipedItem[13];
+								if (xpos-300 > 0){
+									tooltipx1 = xpos-100;
+									tooltipx2 = xpos-200;
+									tooltipx3 = xpos-300;
+								} else {
+									tooltipx1 = xpos + iconSize;
+									tooltipx2 = xpos + iconSize + 100;
+									tooltipx3 = xpos + iconSize + 200;
+								}
+								if (ypos-100 > 0){
+									tooltipy1 = ypos-100;
+									tooltipy2 = ypos-100;
+									tooltipy3 = ypos-100;
+								} else {
+									tooltipy1 = ypos + iconSize;
+									tooltipy2 = ypos + iconSize;
+									tooltipy3 = ypos + iconSize;
+								}
+							} else {
+								tooltipitem1 = arraypassed[slot];
+								tooltipitem2 = EquipedItem[12];
+								if (xpos-200 > 0){
+									tooltipx1 = xpos-100;
+									tooltipx2 = xpos-200;
+								} else {
+									tooltipx1 = xpos + iconSize;
+									tooltipx2 = xpos + iconSize + 100;
+								}
+								if (ypos-100 > 0){
+									tooltipy1 = ypos-100;
+									tooltipy2 = ypos-100;
+								} else {
+									tooltipy1 = ypos + iconSize;
+									tooltipy2 = ypos + iconSize;
+								}
+							}
+						} else {
+							if (EquipedItem[13] != null){
+								tooltipitem1 = arraypassed[slot];
+								tooltipitem2 = EquipedItem[13];
+								if (xpos-200 > 0){
+									tooltipx1 = xpos-100;
+									tooltipx2 = xpos-200;
+								} else {
+									tooltipx1 = xpos + iconSize;
+									tooltipx2 = xpos + iconSize + 100;
+								}
+								if (ypos-100 > 0){
+									tooltipy1 = ypos-100;
+									tooltipy2 = ypos-100;
+								} else {
+									tooltipy1 = ypos + iconSize;
+									tooltipy2 = ypos + iconSize;
+								}
+							}
+						}
+						if (EquipedItem[12] == null && EquipedItem[13] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Ear"){
+						if (EquipedItem[14] != null){
+							if (EquipedItem[15] != null){
+								tooltipitem1 = arraypassed[slot];
+								tooltipitem2 = EquipedItem[14];
+								tooltipitem3 = EquipedItem[15];
+								if (xpos-300 > 0){
+									tooltipx1 = xpos-100;
+									tooltipx2 = xpos-200;
+									tooltipx3 = xpos-300;
+								} else {
+									tooltipx1 = xpos + iconSize;
+									tooltipx2 = xpos + iconSize + 100;
+									tooltipx3 = xpos + iconSize + 200;
+								}
+								if (ypos-100 > 0){
+									tooltipy1 = ypos-100;
+									tooltipy2 = ypos-100;
+									tooltipy3 = ypos-100;
+								} else {
+									tooltipy1 = ypos + iconSize;
+									tooltipy2 = ypos + iconSize;
+									tooltipy3 = ypos + iconSize;
+								}
+							} else {
+								tooltipitem1 = arraypassed[slot];
+								tooltipitem2 = EquipedItem[14];
+								if (xpos-200 > 0){
+									tooltipx1 = xpos-100;
+									tooltipx2 = xpos-200;
+								} else {
+									tooltipx1 = xpos + iconSize;
+									tooltipx2 = xpos + iconSize + 100;
+								}
+								if (ypos-100 > 0){
+									tooltipy1 = ypos-100;
+									tooltipy2 = ypos-100;
+								} else {
+									tooltipy1 = ypos + iconSize;
+									tooltipy2 = ypos + iconSize;
+								}
+							}
+						} else {
+							if (EquipedItem[15] != null){
+								tooltipitem1 = arraypassed[slot];
+								tooltipitem2 = EquipedItem[15];
+								if (xpos-200 > 0){
+									tooltipx1 = xpos-100;
+									tooltipx2 = xpos-200;
+								} else {
+									tooltipx1 = xpos + iconSize;
+									tooltipx2 = xpos + iconSize + 100;
+								}
+								if (ypos-100 > 0){
+									tooltipy1 = ypos-100;
+									tooltipy2 = ypos-100;
+								} else {
+									tooltipy1 = ypos + iconSize;
+									tooltipy2 = ypos + iconSize;
+								}
+							}
+						}
+						if (EquipedItem[14] == null && EquipedItem[15] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Primary"){
+						if (EquipedItem[16] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[16];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[16] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Secondary"){
+						if (EquipedItem[17] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[17];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[17] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Range"){
+						if (EquipedItem[18] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[18];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[18] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+					if(arraypassed[slot].equipmenttype == "Ammo"){
+						if (EquipedItem[19] != null){
+							tooltipitem1 = arraypassed[slot];
+							tooltipitem2 = EquipedItem[19];
+							if (xpos-200 > 0){
+								tooltipx1 = xpos-100;
+								tooltipx2 = xpos-200;
+							} else {
+								tooltipx1 = xpos + iconSize;
+								tooltipx2 = xpos + iconSize + 100;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+								tooltipy2 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+								tooltipy2 = ypos + iconSize;
+							}
+						}
+						if (EquipedItem[19] == null){
+							tooltipitem1 = arraypassed[slot];
+							if (xpos-100 > 0){
+								tooltipx1 = xpos-100;
+							} else {
+								tooltipx1 = xpos + iconSize;
+							}
+							if (ypos-100 > 0){
+								tooltipy1 = ypos-100;
+							} else {
+								tooltipy1 = ypos + iconSize;
+							}
+						}
+					}
+				} else {
+					tooltipitem1 = arraypassed[slot];
+					if (xpos-100 > 0){
+						tooltipx1 = xpos-100;
+					} else {
+						tooltipx1 = xpos + iconSize;
+					}
+					if (ypos-100 > 0){
+						tooltipy1 = ypos-100;
+					} else {
+						tooltipy1 = ypos + iconSize;
+					}
+				}
+			}
+		}
+	}
+}
+
+
+function calculateweight(){
+	weightamount = 0.0;
+	for( var i = 0; i < inventory.length; i ++ ){
+		if (inventory[i] != null){
+			if (inventory[i].itemtype == "Bag"){
+				weightamount = weightamount + inventory[i].itemweight;
+				for( var k = 0; k < 28; k ++ ){
+					if (inventory[i].BagItem[k] != null){
+						if (inventory[i].BagItem[k].itemtype == "Stack"){
+							weightamount = weightamount + (inventory[i].BagItem[k].itemweight * inventory[i].BagItem[k].itemstacksize);
+						} else {
+							weightamount = weightamount + inventory[i].BagItem[k].itemweight;
+						}
+					}
+				}
+			} else {
+				if (inventory[i].itemtype == "Stack"){
+					weightamount = weightamount + (inventory[i].itemweight * inventory[i].itemstacksize);
+				} else {
+					weightamount = weightamount + inventory[i].itemweight;
+				}
+			}
+		}
+	}
+	for( var j = 0; j < EquipedItem.length; j ++ ){
+		if (EquipedItem[j] != null){
+			weightamount = weightamount + EquipedItem[j].itemweight;
+		}
+	}
+	if (mouseitem != null){
+		if (mouseitem.itemtype == "Stack"){
+			weightamount = weightamount + (mouseitem.itemweight * mouseitem.itemstacksize);
+		} else {
+			weightamount = weightamount + mouseitem.itemweight;
+		}
+	}
+	for( var l = 0; l < inventorymoney.length; l ++ ){
+		if (inventorymoney[l] != null){
+			weightamount = weightamount + (inventorymoney[l].itemweight * inventorymoney[l].itemstacksize);
+		}
+	}
+	theweight = "";
+	theweight = theweight + weightamount;
+	return (theweight);
+}

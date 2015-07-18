@@ -1,0 +1,66 @@
+using UnityEngine;													using UnityEditor;
+using System;															using System.Collections;	
+using System.Reflection;											using System.Linq;
+
+[CustomEditor(typeof(ItemStruct))] [CanEditMultipleObjects] public class ItemEditor : Editor {
+	
+	internal SerializedProperty TypeProp;					internal SerializedProperty UsedProp;
+	internal SerializedProperty NameProp;					internal SerializedProperty DescProp;
+	internal SerializedProperty WeightProp;				internal SerializedProperty ValueProp;
+	internal SerializedProperty IconProp;					internal SerializedProperty SoundProp;
+	internal Texture2D curTexture;
+	
+	public void OnEnable (  ) {
+		TypeProp = serializedObject.FindProperty("rType");
+		UsedProp = serializedObject.FindProperty("UsedItem");
+		NameProp = serializedObject.FindProperty("Name");
+		DescProp = serializedObject.FindProperty("Description");
+		WeightProp = serializedObject.FindProperty("Weight");
+		ValueProp = serializedObject.FindProperty("Value");
+		IconProp = serializedObject.FindProperty("Icon");
+		SoundProp = serializedObject.FindProperty("Sound");
+	}
+	
+	public override void OnInspectorGUI (  ) {
+		serializedObject.Update();
+		serializedObject.UpdateIfDirtyOrScript();
+	//	RenderStaticPreview("Resources/whatever", subObject, width, height);
+	//	EditorGUILayout.ColorField(new byte ());
+		EditorGUI.DrawPreviewTexture(new Rect (0,0,128,128), curTexture);
+		serializedObject.ApplyModifiedProperties();
+	//	base.OnInspectorGUI ();
+	}
+	
+	public object GetParent (SerializedProperty prop) {
+		var path = prop.propertyPath.Replace(".Array.data[", "[");
+		object obj = prop.serializedObject.targetObject;
+		var elements = path.Split('.');
+		foreach(var element in elements.Take(elements.Length-1)) {
+			if (element.Contains("[")) {
+				var elementName = element.Substring(0, element.IndexOf("["));
+				var index = Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[","").Replace("]",""));
+				obj = GetValue(obj, elementName, index);
+			} else {
+	         obj = GetValue(obj, element);
+	       }
+	    } return obj;
+	}
+	 
+	public object GetValue(object source, string name) {
+		if(source == null) return null;
+		var type = source.GetType();
+		var f = type.GetField(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+	    if(f == null) {
+	       var p = type.GetProperty(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+	       if(p == null) return null;
+	       return p.GetValue(source, null);
+	    } return f.GetValue(source);
+	}
+	 
+	public object GetValue (object source, string name, int index) {
+	    var enumerable = GetValue(source, name) as IEnumerable;
+	    var enm = enumerable.GetEnumerator();
+	    while(index-- >= 0) enm.MoveNext();
+	    return enm.Current;
+	}
+}
