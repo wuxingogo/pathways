@@ -36,7 +36,7 @@ ehthumbs.db
 
 # lfs
 *.psd
-*.fbx # ok lets party no nevermind
+#*.fbx # ok lets party
 *.png
 *.jpg
 *.bmp
@@ -51,7 +51,7 @@ ehthumbs.db
 *.ttf
 *.ztl
 *.stl
-*.obj
+#*.obj
 *.ogg
 *.wav
 *.aif
