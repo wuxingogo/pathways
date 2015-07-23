@@ -1,44 +1,78 @@
-/* Ben Scott * bescott@andrew.cmu.edu * 2015-07-17 * Pathways */
+/* Ben Scott * bescott@andrew.cmu.edu * 2015-07-22 * Pathways */
 
-using UnityEngine;
-using UnityEngine.UI;
-using System.Collections;
-using System.Collections.Generic;
-using type=System.Type;
-using term=PathwaysEngine.UserInterface;
-using Flags=System.FlagsAttribute;
+using UnityEngine;						using UnityEngine.UI;
+using System.Collections;				using System.Collections.Generic;
+using System.IO; 						using type=System.Type;
+using Flags=System.FlagsAttribute; 		using System.Text.RegularExpressions;
+using term=PathwaysEngine.UserInterface;using util=PathwaysEngine.Utilities;
 
 namespace PathwaysEngine {
-	public enum GameStates : byte { None, Game, Term, Menu };
+	public enum GameStates : byte { None=0, Game=1, Term=2, Menu=3 };
 
 	public static class Pathways {
+		public static string[] yaml_files = {"pathways.yml","Encounters.yml"};
 		public static GameStates GameState = GameStates.Game;
 		public static Camera mainCamera;
 		public static Player player;
+		public static readonly Dictionary<string,string> encounters;
+		public static readonly Dictionary<string,string> pathways;
 		public static term::Controls controls;
 		public static term::Terminal terminal;
-		public static readonly Dictionary<string,TextAsset> encounters;
 
-		static Pathways () {
+		static Pathways() {
 			player = Object.FindObjectOfType<Player>();
 			terminal = Object.FindObjectOfType<term::Terminal>();
 			mainCamera = Camera.main;
-			LoadYAML();
+			pathways = SimpleYAML("/Assets/PathwaysEngine/Manuscript/pathways.yml");
 		}
 
-		public static string GetEncounterYAML(term::Encounter e) {
-			return "thing";
+		public static string GetTextYAML(string s) { return pathways[s]; }
+
+		public static Dictionary<string,string> SimpleYAML(string file_name) {
+			if (!File.Exists(Directory.GetCurrentDirectory()+file_name))
+				throw new System.Exception(file_name);
+			var dict = new Dictionary<string,string>();
+			var map = new Regex(@"(\w+):\s*");
+			using (TextReader reader=File.OpenText(Directory.GetCurrentDirectory()+file_name)) {
+				var line = reader.ReadLine();
+				var i = 100;
+				while (line!=null && i>0) {
+					i--;
+					var temp = new List<string>();
+					string name;
+					var match = map.Match(line);
+					if (match.Success) {
+						name = match.Groups[1].Value;
+						while (line!=null && !(new Regex(@"\n").Match(line).Success) && i>0) {
+							i--;
+							line = reader.ReadLine();
+							temp.Add(line);
+						} dict[name] = string.Join("\n",temp.ToArray());
+						Debug.Log(dict[name]);
+					} else line = reader.ReadLine();
+				} //fileLines = temp.ToArray();
+			//Debug.Log(dict["init"]);
+			dict["init"] = new util::Markdown().Transform(dict["init"]);
+			} return dict;
 		}
 
-		public static string GetTextYAML(string key) {
-			// get the mapping thing and stuff, e.nameMessage
-			return "<i>hai</i> that should be italic, this strong <b>asdf </b>";
+		public static void ParseYAML(string file_name) {
+			if (File.Exists(file_name)) { // parse, compose, construct
+				using (TextReader reader = File.OpenText(file_name)) {
+					var line = reader.ReadLine();
+					var temp = new List<string>();
+					while (line!=null) {
+						temp.Add(line);
+						line = reader.ReadLine();
+					} //fileLines = temp.ToArray();
+				}
+			} else throw new System.Exception(file_name);
 		}
 
-		static void LoadYAML() {
-			// parse
-			// compose
-			// construct
+		public struct name {
+			public string first;
+			public string last;
+			public name(string f, string l) { first = f; last = l; }
 		}
 	}
 
@@ -50,10 +84,8 @@ namespace PathwaysEngine {
 			bool held { get; set; }
 			string name { get; set; }
 			string desc { get; set; }
-			void Find();
-			void View();
-			void Take();
-			void Drop();
+			void Find();  void View();
+			void Take();  void Drop();
 		}
 
 		public interface IStack : IItem {
@@ -65,15 +97,13 @@ namespace PathwaysEngine {
 		public interface IGainful : IItem {
 			bool sold { get; set; }
 			int cost { get; set; }
-			void Buy();
-			void Sell();
+			void Buy();  void Sell();
 		}
 
 		public interface IStorage : IItem, ICollection<Item> {
 			int capacity { get; set; }
 			List<Item> items { get; set; }
-			void Insert();
-			void Remove();
+			void Insert();  void Remove();
 			bool Holds(Item item);
 		}
 
@@ -90,8 +120,7 @@ namespace PathwaysEngine {
 
 		public interface IEquippable : IUsable {
 			bool worn { get; set; }
-			void Equip();
-			void Stow();
+			void Equip();  void Stow();
 		}
 
 		public interface IWieldable : IEquippable {

@@ -1,0 +1,20 @@
+%YAML 1.2
+--- !pathways
+
+init: |
+  Pathways Into Darkness v0.3.5
+  =============================
+  Copyright (c) 2015, Ben Scott <admin@bescott.org>
+  **Welcome to Pathways into Darkness!**
+  If this is your first time playing,
+  press "`" (tilde) and type help for more information.
+
+help: |
+  ## Help ##
+  ### Getting Started ###
+  such and such this and that
+
+
+dead: |
+  ## *** YOU HAVE DIED. *** ##
+  **Would you like to Restore, Restart, or Quit?**

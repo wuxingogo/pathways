@@ -1,10 +1,7 @@
 ﻿/* Ben Scott * bescott@andrew.cmu.edu * 2015-07-07 * Hand */
 
-using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-using invt=PathwaysEngine.Inventory;
-using HandError=System.NullReferenceException;
+using UnityEngine;           using invt=PathwaysEngine.Inventory;
+using System.Collections;    using System.Collections.Generic;
 
 namespace PathwaysEngine.Movement {
 	public class Hand : MonoBehaviour {

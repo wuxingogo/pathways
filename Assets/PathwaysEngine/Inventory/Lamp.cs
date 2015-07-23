@@ -11,11 +11,11 @@ namespace PathwaysEngine.Inventory {
 		public AudioClip auSwitch;
 		Animator animator;
 		anim::IKControl handIK;
-		public term::Controls.InputKey OnDash, OnLamp;
+		public term::key dash, lamp;
 
 		public Lamp() {
-			OnDash = new term::Controls.InputKey((n)=>sprint=n);
-			OnLamp = new term::Controls.InputKey((n)=>{
+			dash = new term::key((n)=>sprint=n);
+			lamp = new term::key((n)=>{
 				if (!wait && n && on) on = !on;
 				else if (!wait && n) worn = true;});
 		}

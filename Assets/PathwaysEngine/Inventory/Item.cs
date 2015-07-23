@@ -1,8 +1,7 @@
 /* Ben Scott * bescott@andrew.cmu.edu * 2015-07-09 * Item */
 
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
+using System.Collections;    using System.Collections.Generic;
 
 namespace PathwaysEngine.Inventory {
 	public class Item : MonoBehaviour, IItem {

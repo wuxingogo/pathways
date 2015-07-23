@@ -15,7 +15,7 @@ namespace PathwaysEngine.Movement {
 		bool isRestoring, isDead, wasHit;
 		uint index;
 		int iter, maskPlayer;
-		float roll, inv, angle, curL, maxL, timeT;
+		float inv, angle, curL, maxL, timeT;
 		public float modSprint,modCrouch,thetaL,thetaT;
 		double sigma, cutoff;
 		double[] rotArray;
@@ -25,7 +25,7 @@ namespace PathwaysEngine.Movement {
 		Transform mCamera;
 		Vector3 childMotorRotation,initCam;
 		public Transform deadPlayer,mapPlayer,deadtemp;
-		public term::Controls.InputAxis OnRoll;
+		public term::axis roll;
 
 		internal PlayerGimbal() {
 			isRestoring = true;		isDead 		= false;
@@ -35,8 +35,7 @@ namespace PathwaysEngine.Movement {
 			thetaT 		= 50.0f;	timeT 		= 0.8f;
 			angle 		= 50.0f;	rotArray 	= new double[iter];
 			thetaL 		= 0.0f;		maxL 		= 0.5f;
-			roll 		= 0.0f;		cutoff 		= 0.001;
-			OnRoll 		= new term::Controls.InputAxis((n)=>roll=n);
+			cutoff 		= 0.001; 	roll 		= new term::axis((n)=>roll.input=n);
 		}
 
 		public void Start() {
@@ -58,19 +57,19 @@ namespace PathwaysEngine.Movement {
 			childPlayer.transform.parent = null;
 			transform.position = childPlayer.transform.position;
 			childPlayer.transform.parent = transform;
-			rotArray[(int)index%iter] = roll*angle*Time.smoothDeltaTime;
+			rotArray[(int)index%iter] = roll.input*angle*Time.smoothDeltaTime;
 			// ((CCW)?angle*Time.smoothDeltaTime:0f-((CW)?angle*Time.smoothDeltaTime:0f));
 			foreach (float entry in rotArray) sigma += entry;
-			sigma *= inv*((childMotor.dash)?modSprint:1.0f);
+			sigma *= inv*((childMotor.dash.input)?modSprint:1.0f);
 			index = (uint)(index%iter)+1;
 			if (childMotor.isGrounded && childMotor.wasGrounded) {
 				initCam = transform.position+Vector3.up*1.8f;
-				maxL = ((childMotor.dash)?modSprint*0.5f:0.5f);
-				if (roll != 0) {
-					wasHit = Physics.SphereCast(initCam,0.4f,initCam+mCamera.TransformDirection(Vector3.right)*maxL*roll,out hitSphere, 1f, ~maskPlayer);
+				maxL = ((childMotor.dash.input)?modSprint*0.5f:0.5f);
+				if (roll.input != 0) {
+					wasHit = Physics.SphereCast(initCam,0.4f,initCam+mCamera.TransformDirection(Vector3.right)*maxL*roll.input,out hitSphere, 1f, ~maskPlayer);
 					maxL = Mathf.Min(maxL,(wasHit)?hitSphere.distance:maxL);
 					if (Mathf.Abs(thetaL-maxL)>0.1f)
-						thetaL = Mathf.SmoothDampAngle(thetaL, roll*maxL,ref curL,0.1f,5f,Time.deltaTime);
+						thetaL = Mathf.SmoothDampAngle(thetaL, roll.input*maxL,ref curL,0.1f,5f,Time.deltaTime);
 				} else thetaL = Mathf.SmoothDampAngle(thetaL, 0, ref curL, 0.1f, 5f, Time.deltaTime);
 				childMotorRotation.Set(thetaL, mCamera.localPosition.y, 0);
 				mCamera.localPosition = childMotorRotation;
@@ -110,7 +109,5 @@ namespace PathwaysEngine.Movement {
 			deadtemp.parent = null;
 			Destroy(gameObject);
 		}
-
-//		public void OnRoll(float value) { roll = value; }
 	}
 }

@@ -1,4 +1,4 @@
-/* Ben Scott*bescott@andrew.cmu.edu*2015-07-07*Experimental Motor */
+/* Ben Scott * bescott@andrew.cmu.edu * 2015-07-07 * Experimental Motor */
 
 using UnityEngine;
 using System.Collections;
@@ -33,18 +33,14 @@ namespace PathwaysEngine.Movement {
 		CapsuleCollider cl;
 		Collider[] cls;
 		IComparer rayHitComparer;
-		public PhysicMaterial frictionZero, frictionFull;
 		Transform cam;
 		public Transform lookTarget { get; set; }
+		public PhysicMaterial frictionZero, frictionFull;
 		public GameObject root;
-		public term::Controls.InputKey OnJump, OnDash, OnDuck;
-		public term::Controls.InputAxis OnAxisX, OnAxisY;
+//		public term::Controls.InputKey OnJump, OnDash, OnDuck;
+		public term::key jump, dash, duck;
+		public term::axis axisX, axisY;
 
-		public bool jump { get; set; }
-		public bool dash { get; set; }
-		public bool duck { get; set; }
-		public float axisX { get; set; }
-		public float axisY { get; set; }
 		public bool jumping { get; set; }
 		public bool isGrounded { get; set; }
 		public bool wasGrounded { get; set; }
@@ -76,7 +72,6 @@ namespace PathwaysEngine.Movement {
 		} bool _dead = false;
 
 
-
 		// tpc fields
 		public bool onGround, isLookCam, falling;
 		public float jumpPower, airSpeed, airControl, terminalVelocity,
@@ -90,7 +85,6 @@ namespace PathwaysEngine.Movement {
 		Vector3 currentLookPos, moveInput, _velocity, lookPos, camForward, move;
 
 		internal PrototypeMotor() {
-			jump			= false;		dash				= false;
 			jumping			= false;		wasJumping			= false;
 			maxSpeed		= 57.2f;		massPlayer			= 80;
 			dampingGround	= 30.0f;		dampingAirborne		= 20.0f;
@@ -107,11 +101,6 @@ namespace PathwaysEngine.Movement {
 			jumpDir			= Vector3.up;	inputMove			= Vector3.zero;
 			hitPoint		= Vector3.zero;
 			lastHitPoint 	= new Vector3(Mathf.Infinity,0,0);
-			OnJump 			= new term::Controls.InputKey((n)=>jump=n);
-			OnDash			= new term::Controls.InputKey((n)=>dash=n);
-			OnDuck 			= new term::Controls.InputKey((n)=>duck=n);
-			OnAxisX 		= new term::Controls.InputAxis((n)=>axisX=n);
-			OnAxisY 		= new term::Controls.InputAxis((n)=>axisY=n);
 
 			// tpc
 			isLookCam 				= true;
@@ -125,6 +114,12 @@ namespace PathwaysEngine.Movement {
 			autoTurnThresholdAngle	= 100.0f;	autoTurnSpeed		= 2.0f;
 			jumpRepeatDelayTime 	= 0.25f;	runCycleLegOffset 	= 0.2f;
 			jumpPower 				= 12.0f;	groundCheckDist 	= 0.1f;
+
+			axisX = new term::axis((n)=>axisX.input=n);
+			axisY = new term::axis((n)=>axisY.input=n);
+			jump  = new term::key((n)=>jump.input=n);
+			dash  = new term::key((n)=>dash.input=n);
+			duck  = new term::key((n)=>duck.input=n);
 		}
 
 		/* internal ~PrototypeMotor() { GameObject.Destroy(mapFollower); } */
@@ -150,7 +145,7 @@ namespace PathwaysEngine.Movement {
 			dead = false;
 			animator = GetComponent<Animator>();
 			foreach (var childAnimator in GetComponentsInChildren<Animator>()) {
-				if (childAnimator != animator) { // for hot-swapping avatars, child it
+				if (childAnimator!=animator) { // for hot-swapping avatars, child it
 					animator.avatar = childAnimator.avatar;
 					Destroy(childAnimator);
 					break;
@@ -167,7 +162,7 @@ namespace PathwaysEngine.Movement {
 		public void Update() {
 			if (Mathf.Abs(Time.timeScale)<0.01f) return;
 			if (modSprint==0||modCrouch==0||speedAnterior==0||speedLateral==0||speedPosterior==0) return;
-			Vector3 dirVector = new Vector3(axisX, 0, axisY);
+			Vector3 dirVector = new Vector3(axisX.input, 0, axisY.input);
 			if (dirVector != Vector3.zero) {
 				float dirLength = dirVector.magnitude;
 				dirVector /= dirLength;
@@ -189,10 +184,10 @@ namespace PathwaysEngine.Movement {
 			// tpc
 			if (cam) {
 				camForward = Vector3.Scale(cam.forward,new Vector3(1,0,1)).normalized;
-				move = axisY*camForward+axisX*cam.right;
-			} else move = axisY*Vector3.forward+axisX*Vector3.right;
+				move = axisY.input*camForward+axisX.input*cam.right;
+			} else move = axisY.input*Vector3.forward+axisX.input*Vector3.right;
 			if (move.magnitude>1) move.Normalize();
-			move *= (dash)?1f:0.5f;
+			move *= (dash.input)?1f:0.5f;
 		    lookPos = (isLookCam && cam!=null)
 		    	? transform.position+cam.forward*100
 		    	: transform.position+transform.forward*100;
@@ -252,8 +247,8 @@ namespace PathwaysEngine.Movement {
 				activeGlobalRotation = transform.rotation;
 				activeLocalRotation = Quaternion.Inverse(activePlatform.rotation)*activeGlobalRotation;
 			}
-			slidingSpeed = (duck)?(4.0f):(15.0f);
-			tgtCrouch = (duck)?1.62f:2.0f;
+			slidingSpeed = (duck.input)?(4.0f):(15.0f);
+			tgtCrouch = (duck.input)?1.62f:2.0f;
 			if (Mathf.Abs(deltaHeight-tgtCrouch)<0.01f) deltaHeight = tgtCrouch;
 			deltaHeight = Mathf.SmoothDamp(deltaHeight, tgtCrouch, ref deltaCrouch, 0.06f, 64, Time.smoothDeltaTime);
 			cl.height = deltaHeight;
@@ -281,10 +276,10 @@ namespace PathwaysEngine.Movement {
 				velocityChangeVector = velocityChangeVector.normalized*maxSpeedChange;
 			if (isGrounded) tempVelocity += velocityChangeVector;
 			if (isGrounded) tempVelocity.y = Mathf.Min(velocity.y, 0);
-			if (!jump) {					// This second section aplies only the vertical axis motion but
+			if (!jump.input) {					// This second section aplies only the vertical axis motion but
 				wasJumping = false;								// the reason I've conjoined these two is because I now have an
 				lastEndTime = -100;								// interaction between the user's vertical & horizontal vectors
-			} if (jump && lastEndTime<0) lastEndTime = Time.time;
+			} if (jump.input && lastEndTime<0) lastEndTime = Time.time;
 			if (isGrounded) tempVelocity.y = Mathf.Min(0, tempVelocity.y) - -Physics.gravity.y*Time.deltaTime;
 			else {
 				tempVelocity.y = velocity.y - -Physics.gravity.y*2*Time.deltaTime;
@@ -342,8 +337,8 @@ namespace PathwaysEngine.Movement {
 		   	float maxSpeed = 0.0f;
 			if (dirDesired != Vector3.zero) {
 				float zAxisEllipseMultiplier = (dirDesired.z > 0 ? speedAnterior : speedPosterior)/speedLateral;
-				if (dash && isGrounded) zAxisEllipseMultiplier *= modSprint;
-				else if (duck && isGrounded) zAxisEllipseMultiplier *= modCrouch;
+				if (dash.input && isGrounded) zAxisEllipseMultiplier *= modSprint;
+				else if (duck.input && isGrounded) zAxisEllipseMultiplier *= modCrouch;
 				Vector3 temp = new Vector3(dirDesired.x, 0, dirDesired.z/zAxisEllipseMultiplier).normalized;
 				maxSpeed = new Vector3(temp.x, 0, temp.z*zAxisEllipseMultiplier).magnitude*speedLateral;
 			} if (isGrounded) {
@@ -381,11 +376,11 @@ namespace PathwaysEngine.Movement {
 				float lookAngle = Mathf.Atan2(lookDelta.x, lookDelta.z)*Mathf.Rad2Deg;
 				if (Mathf.Abs(lookAngle)>autoTurnThresholdAngle)
 					turnAmount += lookAngle*autoTurnSpeed*0.001f;
-			} if (!duck) { // prevent standing up in duck to avoid ceiling problems
+			} if (!duck.input) { // prevent standing up in duck to avoid ceiling problems
 				Ray crouchRay = new Ray(rb.position+Vector3.up*cl.radius*0.5f,Vector3.up);
 				float crouchRayLength = originalHeight-cl.radius*0.5f;
-				if (Physics.SphereCast(crouchRay,cl.radius*0.5f,crouchRayLength, layerMask)) duck = true;
-			} if (onGround && duck && (cl.height!=originalHeight*crouchHeight)) {
+				if (Physics.SphereCast(crouchRay,cl.radius*0.5f,crouchRayLength, layerMask)) duck.input = true;
+			} if (onGround && duck.input && (cl.height!=originalHeight*crouchHeight)) {
 				cl.height = Mathf.MoveTowards(cl.height, originalHeight*crouchHeight,Time.smoothDeltaTime*4);
 				cl.center = Vector3.MoveTowards(cl.center,Vector3.up*originalHeight*crouchHeight*0.5f,Time.smoothDeltaTime*2);
 			} else if (cl.height!=originalHeight && cl.center!=Vector3.up*originalHeight*0.5f) {
@@ -401,7 +396,7 @@ namespace PathwaysEngine.Movement {
 				if (moveInput.magnitude == 0) {	_velocity.x = 0; _velocity.z = 0; }
 				bool animationGrounded = animator.GetCurrentAnimatorStateInfo(0).IsName("Grounded");
 				bool okToRepeatJump = Time.time>lastAirTime+jumpRepeatDelayTime;
-				if (jump && !duck && okToRepeatJump && animationGrounded) {
+				if (jump.input && !duck.input && okToRepeatJump && animationGrounded) {
 					onGround = false;
 					_velocity = moveInput*airSpeed;
 					_velocity.y = jumpPower;
@@ -455,7 +450,7 @@ namespace PathwaysEngine.Movement {
 			animator.applyRootMotion = onGround;
 			animator.SetFloat("Forward", forwardAmount, 0.1f, Time.deltaTime);
 			animator.SetFloat("Turn", turnAmount, 0.1f, Time.deltaTime);
-			animator.SetBool("Crouch", duck);
+			animator.SetBool("Crouch", duck.input);
 			animator.SetBool("OnGround", onGround);
 			if (!onGround) animator.SetFloat("Jump", _velocity.y);
 			// calculate which leg is behind, so as to leave that leg trailing in the jump animation

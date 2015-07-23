@@ -1,8 +1,8 @@
 /* Ben Scott * bescott@andrew.cmu.edu * 2014-07-10 * Item Stack */
 
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
+using System.Collections;    using System.Collections.Generic;
+
 
 namespace PathwaysEngine.Inventory {
 	public class ItemStack : Item, IStack {

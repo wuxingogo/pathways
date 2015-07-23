@@ -43,7 +43,7 @@ namespace PathwaysEngine.Utilities {
 			}
 		}
 
-		public virtual void SetTarget(Transform newTransform) { target = newTransform; }
+		public virtual void SetTarget(Transform t) { target = t; }
 
 	}
 }

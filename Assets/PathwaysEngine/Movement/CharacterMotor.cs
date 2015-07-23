@@ -1,16 +1,13 @@
 /* Ben Scott * bescott@andrew.cmu.edu * 2015-07-07 * Character Motor */
 
-using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-using term=PathwaysEngine.UserInterface;
+using UnityEngine;  		 using term=PathwaysEngine.UserInterface;
+using System.Collections;    using System.Collections.Generic;
 
 namespace PathwaysEngine.Movement {
 	[RequireComponent(typeof (CharacterController))]
 	public class CharacterMotor : MonoBehaviour {
-		internal bool jump, dash, duck, wasJumping, newPlatform;
+		internal bool wasJumping, newPlatform;
 		uint massPlayer;
-		float axisX, axisY;
 		internal float maxSpeed, dampingGround, dampingAirborne,
 			lastStartTime, lastEndTime, deltaPitch, deltaStep;
 		public float modSprint, modCrouch, speedAnterior, speedLateral,
@@ -29,8 +26,8 @@ namespace PathwaysEngine.Movement {
 		internal Matrix4x4 lastMatrix;
 		CharacterController cr;
 		ControllerColliderHit lastColl;
-		public term::Controls.InputKey OnJump, OnDash, OnDuck;
-		public term::Controls.InputAxis OnAxisX, OnAxisY;
+		public term::key jump, dash, duck;
+		public term::axis axisX, axisY;
 
 		public bool jumping { get; set; }
 		public bool isGrounded { get; set; }
@@ -41,7 +38,6 @@ namespace PathwaysEngine.Movement {
 			get { return (isGrounded && TooSteep()); } set {} }
 
 		internal CharacterMotor() {
-			jump			= false;		dash				= false;
 			jumping			= false;		wasJumping			= false;
 			maxSpeed		= 57.2f;		massPlayer			= 80;
 			dampingGround	= 30.0f;		dampingAirborne		= 20.0f;
@@ -59,11 +55,11 @@ namespace PathwaysEngine.Movement {
 			jumpDir			= Vector3.up;	inputMove			= Vector3.zero;
 			hitPoint		= Vector3.zero;
 			lastHitPoint 	= new Vector3(Mathf.Infinity,0,0);
-			OnJump 			= new term::Controls.InputKey((n)=>jump=n);
-			OnDash			= new term::Controls.InputKey((n)=>dash=n);
-			OnDuck 			= new term::Controls.InputKey((n)=>duck=n);
-			OnAxisX 		= new term::Controls.InputAxis((n)=>axisX=n);
-			OnAxisY 		= new term::Controls.InputAxis((n)=>axisY=n);
+			jump 			= new term::key((n)=>jump.input=n);
+			dash			= new term::key((n)=>dash.input=n);
+			duck 			= new term::key((n)=>duck.input=n);
+			axisX 			= new term::axis((n)=>axisX.input=n);
+			axisY 			= new term::axis((n)=>axisY.input=n);
 		}
 
 		/* internal ~CharacterMotor() { GameObject.Destroy(mapFollower); } */
@@ -78,7 +74,7 @@ namespace PathwaysEngine.Movement {
 		public void Update() {
 			if (Mathf.Abs(Time.timeScale)<0.01f) return;
 			if (modSprint==0||modCrouch==0||speedAnterior==0||speedLateral==0||speedPosterior==0) return;
-			Vector3 dirVector = new Vector3(axisX, 0, axisY);
+			Vector3 dirVector = new Vector3(axisX.input, 0, axisY.input);
 			if (dirVector != Vector3.zero) {
 				float dirLength = dirVector.magnitude;
 				dirVector /= dirLength;
@@ -154,8 +150,8 @@ namespace PathwaysEngine.Movement {
 				activeGlobalRotation = transform.rotation;
 				activeLocalRotation = Quaternion.Inverse(activePlatform.rotation) * activeGlobalRotation;
 			}
-			slidingSpeed = (duck)?(4.0f):(15.0f);
-			tgtCrouch = (duck)?1.62f:2.0f;
+			slidingSpeed = (duck.input)?(4.0f):(15.0f);
+			tgtCrouch = (duck.input)?1.62f:2.0f;
 			if (Mathf.Abs(deltaHeight-tgtCrouch)<0.01f) deltaHeight = tgtCrouch;
 			deltaHeight = Mathf.SmoothDamp(deltaHeight, tgtCrouch, ref deltaCrouch, 0.06f, 64, Time.smoothDeltaTime);
 			cr.height = deltaHeight;
@@ -183,10 +179,10 @@ namespace PathwaysEngine.Movement {
 				velocityChangeVector = velocityChangeVector.normalized * maxSpeedChange;
 			if (isGrounded) tempVelocity += velocityChangeVector;
 			if (isGrounded) tempVelocity.y = Mathf.Min(velocity.y, 0);
-			if (!jump) {					// This second section aplies only the vertical axis motion but
+			if (!jump.input) {					// This second section aplies only the vertical axis motion but
 				wasJumping = false;								// the reason I've conjoined these two is because I now have an
 				lastEndTime = -100;								// interaction between the user's vertical & horizontal vectors
-			} if (jump && lastEndTime<0) lastEndTime = Time.time;
+			} if (jump.input && lastEndTime<0) lastEndTime = Time.time;
 			if (isGrounded) tempVelocity.y = Mathf.Min(0, tempVelocity.y) - -Physics.gravity.y * Time.deltaTime;
 			else {
 				tempVelocity.y = velocity.y - -Physics.gravity.y*2 * Time.deltaTime;
@@ -208,7 +204,7 @@ namespace PathwaysEngine.Movement {
 					if (dirTransfer==transfer.initial || dirTransfer==transfer.PermaTransfer) {
 						lastVelocity = platformVelocity;
 						tempVelocity += platformVelocity;
-					} // SendMessage("OnJump", SendMessageOptions.DontRequireReceiver);
+					} // SendMessage("jump", SendMessageOptions.DontRequireReceiver);
 				} else wasJumping = false;
 			} else if (cr.collisionFlags==CollisionFlags.Sides)
 				Vector3.Slerp(Vector3.up,lastColl.normal,lateralControl);
@@ -245,8 +241,8 @@ namespace PathwaysEngine.Movement {
 		   	float maxSpeed = 0.0f;
 			if (dirDesired != Vector3.zero) {
 				float zAxisEllipseMultiplier = (dirDesired.z > 0 ? speedAnterior : speedPosterior) / speedLateral;
-				if (dash && isGrounded) zAxisEllipseMultiplier *= modSprint;
-				else if (duck && isGrounded) zAxisEllipseMultiplier *= modCrouch;
+				if (dash.input && isGrounded) zAxisEllipseMultiplier *= modSprint;
+				else if (duck.input && isGrounded) zAxisEllipseMultiplier *= modCrouch;
 				Vector3 temp = new Vector3(dirDesired.x, 0, dirDesired.z / zAxisEllipseMultiplier).normalized;
 				maxSpeed = new Vector3(temp.x, 0, temp.z * zAxisEllipseMultiplier).magnitude * speedLateral;
 			} if (isGrounded) {

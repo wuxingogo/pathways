@@ -6,9 +6,9 @@ using term = PathwaysEngine.UserInterface;
 
 namespace PathwaysEngine.Movement {
 	public class Look : MonoBehaviour {
-		public bool viewRecenter, usePrev, inControl;
+		public bool recenter, usePrev, inControl;
 		uint size, ind;
-		float mouseX, mouseY, ratio;
+		float ratio;
 		public float speed;
 		public enum rotAxes : byte { MouseXY, MouseX, MouseY }
 		public rotAxes rotAxis = rotAxes.MouseXY;
@@ -17,14 +17,14 @@ namespace PathwaysEngine.Movement {
 		Vector3 pr; // previous rotation
 		Vector4 Maxima;
 		Quaternion dr, lr; // delta rotation, last rotation
-		public term::Controls.InputAxis OnMouseX, OnMouseY;
+		public term::axis mouseX, mouseY;
 
 		public Look() {
-			viewRecenter 	= false;	usePrev	= false;
-			inControl 		= true;		speed	= 2.0f;
-			size 			= 8;		ind 	= 0;
-			OnMouseX 		= new term::Controls.InputAxis((n)=>mouseX=n);
-			OnMouseY 		= new term::Controls.InputAxis((n)=>mouseY=n);
+			recenter 	= false;	usePrev	= false;
+			inControl 	= true;		speed	= 2.0f;
+			size 		= 8;		ind 	= 0;
+			mouseX 		= new term::axis((n)=>mouseX.input=n);
+			mouseY 		= new term::axis((n)=>mouseY.input=n);
 		}
 
 		void Awake() {
@@ -32,7 +32,7 @@ namespace PathwaysEngine.Movement {
 			rarr = new Vector2[(int)size];
 			Maxima.Set(-360f,360f,-60f,60f);
 			lr = transform.localRotation;
-			if (GetComponent<Rigidbody>() && !viewRecenter)
+			if (GetComponent<Rigidbody>() && !recenter)
 				GetComponent<Rigidbody>().freezeRotation = true;
 			Sensitivity.Set(speed*ratio, speed);
 		}
@@ -40,10 +40,10 @@ namespace PathwaysEngine.Movement {
 		void Update() {
 			if (!inControl) return;// || (am && am.isPlaying)) return;
 			pr = (usePrev)?transform.localEulerAngles:Vector3.zero;
-			if (viewRecenter) cr.Set(cr.x*0.5f,cr.y*0.5f);
+			if (recenter) cr.Set(cr.x*0.5f,cr.y*0.5f);
 			avg.Set(0f,0f);
-			cr.x += mouseX*Sensitivity.x;
-			cr.y += mouseY*Sensitivity.y;
+			cr.x += mouseX.input*Sensitivity.x;
+			cr.y += mouseY.input*Sensitivity.y;
 			cr.y = ClampAngle(cr.y, Maxima.z, Maxima.w);
 			rarr[(int)ind] = cr;
 			foreach (Vector2 elem in rarr) avg += elem;

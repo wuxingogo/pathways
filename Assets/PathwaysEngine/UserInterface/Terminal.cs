@@ -8,16 +8,17 @@ using Flags=System.FlagsAttribute;
 using Buffer=System.Text.StringBuilder;
 
 namespace PathwaysEngine.UserInterface {
+	[Flags] public enum Formats : int {
+			Default=0xFFFFFF, State=0x2A98AA, Change=0xFFAE10,
+			Alert=0xFC0000, Command=0x999999, h1=48, h2=36,
+			Emphasis, Strong, Newline };
+
 	public class Terminal : MonoBehaviour {
-		[Flags] public enum Format : byte {
-			Default=0, State=1, Change=2, Alert=3 };
 		static bool wait = false;
-		static int[] colorsText = new int[] {
-			0xFFFFFF, 0x2A98AA, 0xFFAE10, 0xFC0000 };
 		static InputField inputField;
 		static Text log;
 		static Buffer buffer = new Buffer(2048);
-		public Controls.InputKey OnTerm;
+		public key term;
 
 		public static bool focus {
 			get { return _focus; }
@@ -30,24 +31,24 @@ namespace PathwaysEngine.UserInterface {
 				}
 			}
 		} static bool _focus = false;
-
+#if OLD
 		public bool term {
 			get { return _term; }
 			set { _term = value;
 				//StartCoroutine(Term());
 			}
 		} bool _term = false;
-
+#endif
 		public Terminal() {
-			OnTerm = new Controls.InputKey(
-				(n)=>{ if (!wait && n) StartCoroutine(Term()); });
+			term = new key((n)=>{if (!wait && n) StartCoroutine(Term()); });
 		}
 
 		IEnumerator Term() {
 			wait = true;
 			yield return new WaitForSeconds(0.125f);
-			term = !term;
-			focus = term;
+			term.input = !term.input;
+			focus = term.input;
+			Pathways.GameState = (term.input)?(GameStates.Term):(GameStates.Game);
 			yield return new WaitForSeconds(0.25f);
 			wait = false;
 		}
@@ -55,7 +56,7 @@ namespace PathwaysEngine.UserInterface {
 		private void Awake() {
 			inputField = gameObject.GetComponentInChildren<InputField>();
 			log = GetComponentInChildren<Text>();
-			Log(Pathways.GetTextYAML("init"), Format.State);
+			Log(Pathways.GetTextYAML("init"),Formats.State);
 		}
 
 		public static void Log() {
@@ -64,14 +65,31 @@ namespace PathwaysEngine.UserInterface {
 		}
 
 		public static void Log(string s) {
-			buffer.AppendLine("\n"+s);
+			buffer.AppendLine(s);
 			log.text = buffer.ToString();
 		}
 
-		public static void Log(string s, Format f) {
-				buffer.AppendLine(string.Format(
-					"\n<color=#{0:X}>{1}</color>",colorsText[(int)f],s));
-			log.text = buffer.ToString();
+		public static void Log(string s, Formats f) {
+			switch (f) {
+				case Formats.Emphasis:
+					buffer.AppendLine(string.Format("\n<i>{0}</i>",s));
+					break;
+				case Formats.Strong:
+					buffer.AppendLine(string.Format("\n<b>{0}</b>",s));
+					break;
+				case Formats.h1:
+				case Formats.h2:
+					buffer.AppendLine(string.Format(
+						"\n<size={0}>{1}</size>", f,s));
+					break;
+				case Formats.Newline:
+					Log(string.Format("\n{0}",s));
+					break;
+				default:
+					buffer.AppendLine(string.Format(
+						"\n<color=#{0:X}>{1}</color>",(int) f,s));
+					break;
+			} log.text = buffer.ToString();
 		}
 
 		public static void Log(params string[] lines) {
@@ -84,21 +102,20 @@ namespace PathwaysEngine.UserInterface {
 			buffer.AppendLine(s.text);
 		}
 
-		public static void LogEvent(Encounter e) {
+		public static void Log(Encounter e) {
 			//Log(e.message); // and then should wait for return
 		}
 
-		public static void CommandInput() {
-//			eval(inputField.TextComponent.text);
+		public void CommandInput() {
+			eval(inputField.text);
+			inputField.text = "";
 		}
 
-		public static void CommandInput(string s) {
-			eval(s);
-		}
+		static public void CommandInput(string s) { eval(s); }
 
 		static void eval(string s) {
-			foreach (var elem in s.Split(' '))
-				Log("wow!"+elem);
+			Log(" > "+s,Formats.Command);
+//			foreach (var elem in s.Split(' ')) break;
 		}
 	}
 }

@@ -1,22 +1,5 @@
 %YAML 1.2
-# Encounters
----
-init:
-  params:
-    reuse: false
-    message: false
-  desc: |
-    Pathways Into Darkness Version A001.REV2
-    Copyright (c) 2015, Ben Scott, all rights reserved.
-    Welcome to Pathways into Darkness!
-
-help:
-  params:
-    reuse: true
-    message: false
-    desc: |
-      If this is your first time playing...
-
+--- !Encounters
 
   - name: Introduction
     params:
