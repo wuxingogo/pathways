@@ -1,24 +1,17 @@
-/* Ben Scott * bescott@andrew.cmu.edu * 2015-07-08 * Flashlight */
+/* Ben Scott * bescott@andrew.cmu.edu * 2015-08-13 * Lamp */
 
 using UnityEngine;
 using System.Collections;
-using anim=PathwaysEngine.StateMachine;
-using term=PathwaysEngine.UserInterface;
+using mvmt=PathwaysEngine.Movement;
+using util=PathwaysEngine.Utilities;
 
 namespace PathwaysEngine.Inventory {
 	public class Lamp : Item, IEquippable {
 		bool wait = false;
 		public AudioClip auSwitch;
 		Animator animator;
-		anim::IKControl handIK;
-		public term::key dash, lamp;
-
-		public Lamp() {
-			dash = new term::key((n)=>sprint=n);
-			lamp = new term::key((n)=>{
-				if (!wait && n && on) on = !on;
-				else if (!wait && n) worn = true;});
-		}
+		mvmt::Hand hand;
+		public util::key dash, lamp;
 
 		bool sprint {
 			get { return _sprint; }
@@ -29,7 +22,8 @@ namespace PathwaysEngine.Inventory {
 
 		public bool on {
 			get { return _on; }
-			set { _on = value;
+			set { if (!held) return;
+				_on = value;
 				StartCoroutine(LateSetBool("on",_on));
 				StartCoroutine(On()); }
 		} bool _on;
@@ -37,25 +31,33 @@ namespace PathwaysEngine.Inventory {
 		public bool worn {
 			get { return _worn; }
 			set { _worn = value;
-				handIK.ikActive = _worn;
+				if (hand) hand.ikActive = _worn;
 				if (_worn) Equip();
 				else Stow(); }
-		} bool _worn = true;
+		} bool _worn = false;
 
 		public bool used { get; set; }
 		public uint uses { get; set; }
 		public float time { get; set; }
 
-		new void Awake() {
+		public Lamp() {
+			dash = new util::key((n)=>sprint=n);
+			lamp = new util::key((n)=>{
+				if (!wait && n && on) on = !on;
+				else if (!wait && n) worn = true;});
+		}
+
+		public override void Awake() {
 			base.Awake();
 			animator = GetComponent<Animator>();
 			foreach (Light elem in GetComponentsInChildren<Light>())
-				elem.enabled = true; //GetComponent<Light>()
-			foreach (var elem in
-			(Object.FindObjectsOfType<anim::IKControl>() as anim::IKControl[]))
-				if (elem.hand==anim::IKControl.Hands.Left) handIK = elem;
+				elem.enabled = false;
 			GetComponent<AudioSource>().clip = auSwitch;
-			worn = true;
+		}
+
+		public void Start() {
+			hand = Player.left;
+			if (!hand) Debug.Log("astasrdt");
 		}
 
 		public void Use() { if (worn) StartCoroutine(On()); }
@@ -78,6 +80,8 @@ namespace PathwaysEngine.Inventory {
 
 		public void Equip() {
 			if (gameObject) gameObject.SetActive(true);
+			Player.Equip(this);
+			gameObject.SetActive(true);
 			StartCoroutine(LateSetBool("worn",_worn));
 			on = true;
 		}

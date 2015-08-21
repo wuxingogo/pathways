@@ -1,51 +1,56 @@
-/* Ben Scott * bescott@andrew.cmu.edu * 2015-07-07 * Bag */
+/* Ben Scott * bescott@andrew.cmu.edu * 2015-07-28 * Bag */
 
 using UnityEngine;
-using System.Collections;   using System.Collections.Generic;
+using System.Collections;
+using System.Collections.Generic;
+using type=System.Type;
+using util=PathwaysEngine.Utilities;
 
 namespace PathwaysEngine.Inventory {
-	public class Bag : MonoBehaviour {
+	public class Bag : ItemCollection {
 		internal bool hasScreenControl, isIgnoringInput;
 		internal int radiusGet, layerItem, invItemValues;
 		internal float reUpdateTimer, reuptakeTimer;
-		internal Flashlight cLight;
-		internal Item[] invItems, allItems;
-		internal Weapon[] invWeapons;
+		LayerMask layerMask;
+		Flashlight cLight;
 		internal List<Item> nearItems;
-		internal GameObject rPlayer;
-		internal Transform localTR;
 		internal Camera mCAMR;
+		util::key invt, menu;
 
 		public Bag() {
-			hasScreenControl	= false;	isIgnoringInput	= false;
-			radiusGet 			= 16;		layerItem 		= 16;
-			reUpdateTimer 		= 0f;		reuptakeTimer 	= 3f;
+			hasScreenControl = false; isIgnoringInput = false;
+			radiusGet 		 = 16;	  layerItem 	  = 16;
+			reUpdateTimer 	 = 0f;	  reuptakeTimer   = 3f;
+			invt = new util::key((n)=>invt.input=n);
+			menu = new util::key((n)=>menu.input=n);
 		}
 
-		internal void Awake() {
-			localTR = transform;
-			invItems = GetComponentsInChildren<Item>();
-			invWeapons = GetComponentsInChildren<Weapon>();
-			rPlayer = GameObject.FindGameObjectWithTag("Player");
-			Pause.PausePlayer(false);
-			allItems = Object.FindObjectsOfType(typeof (Item)) as Item[];
+		public override void Awake() {
+			base.Awake(); //Pause.PausePlayer(false);
+			layerMask = LayerMask.NameToLayer("Items");
 		}
 
-		internal void Update() {
+		void Update() {
 			reuptakeTimer += Time.deltaTime;
 			if (!isIgnoringInput) {
-				if (!hasScreenControl && Input.GetButtonDown("InventoryToggle") || Input.GetButtonDown("MenuToggle")) {
-					Pause.PausePlayer(true);
-					hasScreenControl = true;
-				} else if (hasScreenControl && Input.GetButtonDown("MenuToggle") || Input.GetButtonDown("InventoryToggle")) {
-					Pause.PausePlayer(false);
-					hasScreenControl = false;
-				} // StartCoroutine(InventorySlow());
-			} // if (Mathf.Abs(Input.GetAxis("Mouse ScrollWheel"))>0.1) CycleWeapons(true);
-			if (mCAMR) mCAMR.pixelRect = new Rect(Screen.width-320, 64, 256, 256);
-			else mCAMR = GameObject.FindGameObjectWithTag("Map Camera").GetComponent<Camera>();
+				if (!hasScreenControl && invt.input || menu.input) {
+					hasScreenControl = true; Pause.PausePlayer(true); }
+				else if (hasScreenControl && invt.input || menu.input) {
+					hasScreenControl = false; Pause.PausePlayer(false); }
+			} // StartCoroutine(InventorySlow());
+			//if (mCAMR) mCAMR.pixelRect = new Rect(Screen.width-320, 64, 256, 256);
+			//else mCAMR = GameObject.FindGameObjectWithTag("Map Camera").GetComponent<Camera>();
 		}
 
+		internal Item[] GetNearbyItems() {
+			Collider[] temp = Physics.OverlapSphere(
+				transform.position,8f,layerMask);
+			List<Item> items = new List<Item>();
+			foreach (Collider entity in temp)
+				if (entity.gameObject.GetComponent<Item>())
+					items.Add(entity.gameObject.GetComponent<Item>());
+			return items.ToArray();//typeof(Item) as Item[];
+		}
 
 #if IMPL
 		internal void ItemButton(IUsable item, int m) {
@@ -75,18 +80,29 @@ namespace PathwaysEngine.Inventory {
 		}
 
 		internal bool CheckForDuplicates(Item item) {
-			if (item.playerPack.invItems!=null && item.playerPack.invItems.Length>0) {
-				foreach (Item elem in item.playerPack.invItems) {
+			if (item.playerPack.!=null && item.playerPack..Length>0) {
+				foreach (Item elem in item.playerPack.) {
 					if (item.description == elem.description
 					&& item.title==elem.title&&item.icon==elem.icon
 					&& item.GetType()==elem.GetType()&&item.sound==elem.sound) return true;
 				}
 			} return false;
 		}
-#endif
+
+		public void Add(Item item) { items[item.GetType()].Add(item); }
+		public void Clear() { items = new Dictionary<type,List<Item>>(); }
+		public bool Contains(Item item) {
+			foreach (var list in items.Values)
+				foreach (var elem in list)
+					if (elem.uuid==item.uuid && elem==item) return true;
+			return false;
+		}
+
+		public void Remove(Item item) { items[item.GetType()].Remove(item); }
 
 		internal Item[] GetNearbyItems() {
-			Collider[] temp = Physics.OverlapSphere(localTR.position, radiusGet, 1<<layerItem);
+			Collider[] temp = Physics.OverlapSphere(
+				transform.position,radiusGet,1<<layerItem);
 			ArrayList items = new ArrayList();
 			foreach (Collider entity in temp)
 				if (entity.gameObject.GetComponent<Item>())
@@ -94,15 +110,32 @@ namespace PathwaysEngine.Inventory {
 			return items.ToArray(typeof(Item)) as Item[];
 		}
 
-		internal void AddRemoveItem() { // Brutish Method, Updates Slowly
-			invItems = GetComponentsInChildren<Item>();
-		//	invClips = GetComponentsInChildren<Clip>();
-			invWeapons = GetComponentsInChildren<Weapon>();
-			reUpdateTimer = 0;
+		IEnumerator IEnumerable.GetEnumerator() {
+			return (IEnumerator) GetEnumerator(); }
+
+		public BagEnum GetEnumerator() {
+			return new BagEnum(_items[typeof (Item)]); }
+		public class BagEnum : IEnumerator {
+			List<Item> _items;
+			int position = -1;
+
+			public Item Current {
+				get {
+					try { return items[position]; }
+					catch (IndexOutOfRangeException) {
+						throw new InvalidOperatonException();
+					}
+				}
+			}
+
+			public BagEnum(Item[] _items) { this._items = new List<Item>(_items); }
+			public BagEnum(List<Item> _items) { this._items = _items; }
+
+			public bool MoveNext() {
+				position++;
+				return (position<items.Length);
+			}
 		}
-
-		internal void AddRemoveItem(Item curItem) { invItems = ArrayF.Push(invItems, curItem); }
-
-//	public T AddRemoveItem<T> ( T ItemType ) { ItemType = (Component)GetComponentInChildren(typeof (T)); } //Generic Overload
-	} //*/
+#endif
+	}
 }

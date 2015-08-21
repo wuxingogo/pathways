@@ -1,13 +1,14 @@
-/* Ben Scott * bescott@andrew.cmu.edu * 2015-07-07 * Experimental Motor */
+/* Ben Scott * bescott@andrew.cmu.edu * 2015-08-13 * Experimental Motor */
 
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using invt=PathwaysEngine.Inventory;
-using term=PathwaysEngine.UserInterface;
 using util=PathwaysEngine.Utilities;
 
 namespace PathwaysEngine.Movement {
+	[RequireComponent(typeof(Animator))]
+	[RequireComponent(typeof(Rigidbody))]
 	public class PrototypeMotor : MonoBehaviour {
 		public enum transfer { None, initial, PermaTransfer, PermaLocked }
 		public transfer dirTransfer;
@@ -37,9 +38,8 @@ namespace PathwaysEngine.Movement {
 		public Transform lookTarget { get; set; }
 		public PhysicMaterial frictionZero, frictionFull;
 		public GameObject root;
-//		public term::Controls.InputKey OnJump, OnDash, OnDuck;
-		public term::key jump, dash, duck;
-		public term::axis axisX, axisY;
+		public util::key jump, dash, duck;
+		public util::axis axisX, axisY;
 
 		public bool jumping { get; set; }
 		public bool isGrounded { get; set; }
@@ -70,7 +70,6 @@ namespace PathwaysEngine.Movement {
 				animator.enabled = !value;
 			}
 		} bool _dead = false;
-
 
 		// tpc fields
 		public bool onGround, isLookCam, falling;
@@ -115,11 +114,11 @@ namespace PathwaysEngine.Movement {
 			jumpRepeatDelayTime 	= 0.25f;	runCycleLegOffset 	= 0.2f;
 			jumpPower 				= 12.0f;	groundCheckDist 	= 0.1f;
 
-			axisX = new term::axis((n)=>axisX.input=n);
-			axisY = new term::axis((n)=>axisY.input=n);
-			jump  = new term::key((n)=>jump.input=n);
-			dash  = new term::key((n)=>dash.input=n);
-			duck  = new term::key((n)=>duck.input=n);
+			axisX = new util::axis((n)=>axisX.input=n);
+			axisY = new util::axis((n)=>axisY.input=n);
+			jump  = new util::key((n)=>jump.input=n);
+			dash  = new util::key((n)=>dash.input=n);
+			duck  = new util::key((n)=>duck.input=n);
 		}
 
 		/* internal ~PrototypeMotor() { GameObject.Destroy(mapFollower); } */
@@ -181,6 +180,7 @@ namespace PathwaysEngine.Movement {
 				lastMatrix = activePlatform.localToWorldMatrix;
 				newPlatform = false;
 			} else platformVelocity = Vector3.zero;
+
 			// tpc
 			if (cam) {
 				camForward = Vector3.Scale(cam.forward,new Vector3(1,0,1)).normalized;
@@ -208,15 +208,17 @@ namespace PathwaysEngine.Movement {
 				if (yRotation != 0) transform.Rotate(0, yRotation, 0);
 			}
 			Vector3 lastPosition = transform.position;
-			Vector3 currentMovementOffset = tempVelocity*((Mathf.Abs(Time.deltaTime)>0.01f)?Time.deltaTime:0.01f);
-			float pushDownOffset = Mathf.Max(0.1f, new Vector3(currentMovementOffset.x, 0, currentMovementOffset.z).magnitude); // step offset 0.1f
+			Vector3 currentMovementOffset = tempVelocity*(
+				(Mathf.Abs(Time.deltaTime)>0.01f)?Time.deltaTime:0.01f);
+			float pushDownOffset = Mathf.Max(0.1f, new Vector3(
+				currentMovementOffset.x, 0, currentMovementOffset.z).magnitude); // step offset 0.1f
 			if (isGrounded) currentMovementOffset -= pushDownOffset*Vector3.up;
 			hitPlatform = null;
 			groundNormal = Vector3.zero;
 			Move(currentMovementOffset, lookPos);
 			lastHitPoint = hitPoint;
 			lastGroundNormal = groundNormal;
-			if (activePlatform != hitPlatform && hitPlatform != null) {
+			if (activePlatform!=hitPlatform && hitPlatform != null) {
 				activePlatform = hitPlatform;
 				lastMatrix = hitPlatform.localToWorldMatrix;
 				newPlatform = true;
@@ -257,8 +259,8 @@ namespace PathwaysEngine.Movement {
 		}
 
 		Vector3 applyDeltaVelocity(Vector3 tempVelocity) {
-			Vector3 desiredVelocity;							// the horizontal to calculate direction from the jumping event
-			if (isGrounded && TooSteep()) {						// and to support wall-jumping I need to change horizontal here
+			Vector3 desiredVelocity;			// the horizontal to calculate direction from the jumping event
+			if (isGrounded && TooSteep()) {		// and to support wall-jumping I need to change horizontal here
 				desiredVelocity = new Vector3(groundNormal.x, 0, groundNormal.z).normalized;
 				var projectedMoveDir = Vector3.Project(inputMove, desiredVelocity);
 				desiredVelocity = desiredVelocity+projectedMoveDir*speedControl
@@ -269,16 +271,16 @@ namespace PathwaysEngine.Movement {
 				desiredVelocity += lastVelocity;
 				desiredVelocity.y = 0;
 			} if (isGrounded) desiredVelocity = AdjustGroundVelocityToNormal(desiredVelocity, groundNormal);
-			else tempVelocity.y = 0; 							// Enforce zero on Y because the axes are calculated separately
+			else tempVelocity.y = 0; 	// Enforce zero on Y because the axes are calculated separately
 			float maxSpeedChange = GetMaxAcceleration(isGrounded)*Time.deltaTime;
 			Vector3 velocityChangeVector = (desiredVelocity - tempVelocity);
 			if (velocityChangeVector.sqrMagnitude > maxSpeedChange*maxSpeedChange)
 				velocityChangeVector = velocityChangeVector.normalized*maxSpeedChange;
 			if (isGrounded) tempVelocity += velocityChangeVector;
 			if (isGrounded) tempVelocity.y = Mathf.Min(velocity.y, 0);
-			if (!jump.input) {					// This second section aplies only the vertical axis motion but
-				wasJumping = false;								// the reason I've conjoined these two is because I now have an
-				lastEndTime = -100;								// interaction between the user's vertical & horizontal vectors
+			if (!jump.input) {			// This second section aplies only the vertical axis motion but
+				wasJumping = false;		// the reason I've conjoined these two is because I now have an
+				lastEndTime = -100;		// interaction between the user's vertical & horizontal vectors
 			} if (jump.input && lastEndTime<0) lastEndTime = Time.time;
 			if (isGrounded) tempVelocity.y = Mathf.Min(0, tempVelocity.y) - -Physics.gravity.y*Time.deltaTime;
 			else {
@@ -325,8 +327,8 @@ namespace PathwaysEngine.Movement {
 			if (dirTransfer==transfer.initial || dirTransfer==transfer.PermaTransfer) {
 				if (newPlatform) {
 					Transform platform = activePlatform;
-					yield return new WaitForFixedUpdate();		// Both yields are present as a kind of corruption of von Braun
-					yield return new WaitForFixedUpdate();		// style redundancy as it might be near or have missed the call
+					yield return new WaitForFixedUpdate(); // Both yields are present as a kind of corruption of von Braun
+					yield return new WaitForFixedUpdate(); // style redundancy as it might be near or have missed the call
 					if (isGrounded && platform==activePlatform) yield break;
 				} velocity -= platformVelocity;
 			}
@@ -435,7 +437,7 @@ namespace PathwaysEngine.Movement {
 						if (_velocity.y<-terminalVelocity) {
 							Player.dead = true;
 							dead = true;
-						} if (_velocity.y<=0)
+						} else if (_velocity.y<=0)
 							rb.position = Vector3.MoveTowards(
 								rb.position, hit.point, Time.deltaTime*groundStick);
 						onGround = true;

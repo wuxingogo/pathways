@@ -1,0 +1,26 @@
+%YAML 1.1
+# pathways
+---
+
+dead: |
+  ### \*\*\* YOU HAVE DIED. \*\*\* ###
+  **Would you like to Restore, Restart, or Quit?**
+
+help: |
+  ## Help ##
+  ### Getting Started ###
+  Walk with WASD, look around with the mouse, and hold shift if you ain' gawt time to walk. Press C and control to crouch, and crouch when you land to slide. Get your flashlight out and turn it on with F. To lean around corners, press Q and E. If you jump while doing this, try not to land on your head. Pressing tab opens up the full inventory, pressing G allows you to pick up nearby objects without being prone to attack while you're going through your inventory.
+  I think your first order of business should be to make a point of finding something better than that knife there to defend yourself, a large gun if you find one. No computer should be without one!
+
+init: |
+  ## Pathways Into Darkness v0.3.5 ##
+  Copyright (c) 2015, Ben Scott <admin@bescott.org>
+  **Welcome to Pathways into Darkness!**
+  If this is your first time playing, type "help" for more information.
+
+info: |
+  Pathways is a game of adventure, danger, low cunning, and tasteful liftsmanship of other peoples' intellectual property. This is a recreation of the 1993 original. You should really learn the controls or you're going to die. Some of these actions, (particularly operations on items) can be entered in this terminal, but this *is* a shooter.
+
+move: |
+  You must gather your party before venturing forth.
+

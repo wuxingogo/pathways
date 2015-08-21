@@ -1,8 +1,8 @@
 /* Ben Scott * bescott@andrew.cmu.edu * 2015-07-07 * Weapon */
 
 using UnityEngine;
-using System.Collections;    using System.Collections.Generic;
-
+using System.Collections;
+using System.Collections.Generic;
 
 namespace PathwaysEngine.Inventory {
 	public class Weapon : Item, IWieldable {
@@ -35,7 +35,7 @@ namespace PathwaysEngine.Inventory {
 			isAuto 			= false;	isBurst 		= false;
 			countAmmo 		= 24;		isPrimary 		= false;
 			countLoaded 	= 7;		countBursts 	= 1;
-			fovDefault		= 60;		fovScoped 		= 30;
+			fovDefault		= 0;		fovScoped 		= 30;
 			range 			= 128;		forceShot 		= 443.0f;
 			damageShot 		= 1024.0f;	deltaShot 		= 256.0f;
 			rate 			= 0.2f;		timeReload 		= 2.0f;
@@ -47,7 +47,7 @@ namespace PathwaysEngine.Inventory {
 			sizeClip 		= 8;		MunitionType 	= "9mm PARA";
 		}
 
-		internal new void Awake() {
+		public override void Awake() {
 			base.Awake();
 			mCAMR = Camera.main;
 			am = GetComponent<Animation>();
@@ -63,7 +63,7 @@ namespace PathwaysEngine.Inventory {
 			if (sinceShot<rate) sinceShot+=Time.deltaTime;
 			if (sinceReload<timeReload) sinceReload+=Time.deltaTime;
 		//	StartCoroutine(Stow(toHolster));
-			if (!playerPack.hasControl && Time.timeScale > 0) {
+			if (Time.timeScale>0) {
 				StartCoroutine(Focus());
 				if (Input.GetButtonDown("Reload")) Reload (true);
 				if (Input.GetMouseButtonDown(0)) Use();

@@ -1,7 +1,9 @@
 /* Ben Scott * bescott@andrew.cmu.edu * 2015-07-07 * Character Motor */
 
-using UnityEngine;  		 using term=PathwaysEngine.UserInterface;
-using System.Collections;    using System.Collections.Generic;
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using util=PathwaysEngine.Utilities;
 
 namespace PathwaysEngine.Movement {
 	[RequireComponent(typeof (CharacterController))]
@@ -26,8 +28,8 @@ namespace PathwaysEngine.Movement {
 		internal Matrix4x4 lastMatrix;
 		CharacterController cr;
 		ControllerColliderHit lastColl;
-		public term::key jump, dash, duck;
-		public term::axis axisX, axisY;
+		public util::key jump, dash, duck;
+		public util::axis axisX, axisY;
 
 		public bool jumping { get; set; }
 		public bool isGrounded { get; set; }
@@ -55,11 +57,11 @@ namespace PathwaysEngine.Movement {
 			jumpDir			= Vector3.up;	inputMove			= Vector3.zero;
 			hitPoint		= Vector3.zero;
 			lastHitPoint 	= new Vector3(Mathf.Infinity,0,0);
-			jump 			= new term::key((n)=>jump.input=n);
-			dash			= new term::key((n)=>dash.input=n);
-			duck 			= new term::key((n)=>duck.input=n);
-			axisX 			= new term::axis((n)=>axisX.input=n);
-			axisY 			= new term::axis((n)=>axisY.input=n);
+			jump 			= new util::key((n)=>jump.input=n);
+			dash			= new util::key((n)=>dash.input=n);
+			duck 			= new util::key((n)=>duck.input=n);
+			axisX 			= new util::axis((n)=>axisX.input=n);
+			axisY 			= new util::axis((n)=>axisY.input=n);
 		}
 
 		/* internal ~CharacterMotor() { GameObject.Destroy(mapFollower); } */

@@ -2,18 +2,18 @@
 
 using UnityEngine;
 using System.Collections;
-using term=PathwaysEngine.UserInterface;
 
 namespace PathwaysEngine.Inventory {
 	public class Flashlight : Lamp {
 		public new void Equip() {
+			print("asdf");
+			Terminal.Log("You turn on your flashlight.");
 			base.Equip();
-			term::Terminal.Log("You turn on your flashlight.");
 		}
 
 		public new void Stow() {
+			Terminal.Log("You stow your flashlight.");
 			base.Stow();
-			term::Terminal.Log("You stow your flashlight.");
 		}
 	}
 }

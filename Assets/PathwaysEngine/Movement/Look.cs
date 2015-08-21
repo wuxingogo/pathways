@@ -2,7 +2,7 @@
 
 using UnityEngine;
 using System.Collections;
-using term = PathwaysEngine.UserInterface;
+using util=PathwaysEngine.Utilities;
 
 namespace PathwaysEngine.Movement {
 	public class Look : MonoBehaviour {
@@ -17,14 +17,14 @@ namespace PathwaysEngine.Movement {
 		Vector3 pr; // previous rotation
 		Vector4 Maxima;
 		Quaternion dr, lr; // delta rotation, last rotation
-		public term::axis mouseX, mouseY;
+		public util::axis mouseX, mouseY;
 
 		public Look() {
 			recenter 	= false;	usePrev	= false;
 			inControl 	= true;		speed	= 2.0f;
 			size 		= 8;		ind 	= 0;
-			mouseX 		= new term::axis((n)=>mouseX.input=n);
-			mouseY 		= new term::axis((n)=>mouseY.input=n);
+			mouseX 		= new util::axis((n)=>mouseX.input=n);
+			mouseY 		= new util::axis((n)=>mouseY.input=n);
 		}
 
 		void Awake() {

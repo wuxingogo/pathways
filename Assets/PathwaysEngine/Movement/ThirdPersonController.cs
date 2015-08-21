@@ -1,14 +1,14 @@
 /* Ben Scott * bescott@andrew.cmu.edu * 2015-07-07 * Third Person Controller */
 
-#define DEBUG
+//#define DEBUG
 
 using UnityEngine;
 using System.Collections;
 using invt=PathwaysEngine.Inventory;
-using term=PathwaysEngine.UserInterface;
 using util=PathwaysEngine.Utilities;
 
 namespace PathwaysEngine.Movement {
+	[RequireComponent(typeof(Animator))]
 	public class ThirdPersonController : MonoBehaviour {
 		public bool onGround, isLookCam, falling; //crouchChangeSpeed,
 		public float jumpPower, airSpeed, airControl, terminalVelocity,
@@ -31,13 +31,12 @@ namespace PathwaysEngine.Movement {
 		Transform cam;
 		public Transform lookTarget { get; set; }
 		public GameObject root;
-		public term::key jump, dash, duck;
-		public term::axis axisX, axisY;
+		public util::key jump, dash, duck;
+		public util::axis axisX, axisY;
 
 		public bool dead {
 			get { return _dead; }
-			set {
-				_dead = value;
+			set { _dead = value;
 				rb.detectCollisions = !value;
 				foreach (var elem in cls) elem.enabled = value;
 				foreach (var elem in rbs) {
@@ -69,11 +68,11 @@ namespace PathwaysEngine.Movement {
 			autoTurnThresholdAngle	= 100.0f;	autoTurnSpeed		= 2.0f;
 			jumpRepeatDelayTime 	= 0.25f;	runCycleLegOffset 	= 0.2f;
 			jumpPower 				= 12.0f;	groundCheckDist 	= 0.1f;
-			jump					= new term::key((n)=>jump.input=n);
-			dash 					= new term::key((n)=>dash.input=n);
-			duck 					= new term::key((n)=>duck.input=n);
-			axisX 					= new term::axis((n)=>axisX.input=n);
-			axisY 					= new term::axis((n)=>axisY.input=n);
+			jump					= new util::key((n)=>jump.input=n);
+			dash 					= new util::key((n)=>dash.input=n);
+			duck 					= new util::key((n)=>duck.input=n);
+			axisX 					= new util::axis((n)=>axisX.input=n);
+			axisY 					= new util::axis((n)=>axisY.input=n);
 		}
 
 		void Awake() {
@@ -156,7 +155,7 @@ namespace PathwaysEngine.Movement {
 				velocity.x = 0; velocity.z = 0; }
 			UpdateAnimator(); // send input and other state parameters to the animator
 			rb.velocity = velocity; // reassign velocity, it was probably modified
-//			if (rb.velocity.y<-terminalVelocity) falling = true; // death midair
+			falling = (rb.velocity.y<-terminalVelocity); // falling death
 		}
 
 		void GroundCheck() {
@@ -174,11 +173,10 @@ namespace PathwaysEngine.Movement {
 					DrawPoint(rb.position, Color.red);
 #endif
 					if (!hit.collider.isTrigger) { // this counts as being on ground
-						if (velocity.y<-terminalVelocity) {
+						if (velocity.y<-terminalVelocity || falling) {
 							Player.dead = true;
 							dead = true;
-						}
-						if (velocity.y<=0)
+						} else if (velocity.y<=0)
 							rb.position = Vector3.MoveTowards(
 								rb.position, hit.point, Time.deltaTime*groundStick);
 						onGround = true;

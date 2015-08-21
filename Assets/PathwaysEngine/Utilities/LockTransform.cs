@@ -1,6 +1,6 @@
 ﻿/* Ben Scott * bescott@andrew.cmu.edu * 2014-07-07 * Lock Transform */
 
-#define NONFUNCTIONAL
+//#define ANIMATOR_UPDATE
 
 using UnityEngine;
 using System.Collections;
@@ -8,7 +8,7 @@ using System.Collections;
 namespace PathwaysEngine.Utilities {
 	public class LockTransform : MonoBehaviour {
 		public bool isLocked = true, useInit = true;
-		Vector3 initT = Vector3.zero;
+		//Vector3 initT = Vector3.zero;
 		Transform src, initParent;
 		public Transform tgt;
 
@@ -16,18 +16,17 @@ namespace PathwaysEngine.Utilities {
 			src = transform;
 			initParent = src.parent;
 			src.parent = tgt;
-			if (useInit) initT = src.localPosition;
+			//if (useInit) initT = src.localPosition;
 			src.parent = initParent;
 		}
 
-		void FixedUpdate() {
+		//void FixedUpdate() { FixTransform(); }
+		void Update() { FixTransform(); }
+
+		void FixTransform() {
 			if (isLocked && src && tgt) {
-				src.parent = tgt;
-				src.localPosition = initT;
-				//src.position = tgt.position+initT;
-				src.localRotation = Quaternion.identity;
-				src.parent = initParent;
-				//tgt.rotation; // multiply quaterions?
+				src.position = tgt.position;
+				src.rotation = tgt.rotation;
 			}
 		}
 	}

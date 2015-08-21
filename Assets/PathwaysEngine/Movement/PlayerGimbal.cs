@@ -7,7 +7,6 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using invt=PathwaysEngine.Inventory;
-using term=PathwaysEngine.UserInterface;
 using util=PathwaysEngine.Utilities;
 
 namespace PathwaysEngine.Movement {
@@ -25,7 +24,7 @@ namespace PathwaysEngine.Movement {
 		Transform mCamera;
 		Vector3 childMotorRotation,initCam;
 		public Transform deadPlayer,mapPlayer,deadtemp;
-		public term::axis roll;
+		public util::axis roll;
 
 		internal PlayerGimbal() {
 			isRestoring = true;		isDead 		= false;
@@ -35,7 +34,7 @@ namespace PathwaysEngine.Movement {
 			thetaT 		= 50.0f;	timeT 		= 0.8f;
 			angle 		= 50.0f;	rotArray 	= new double[iter];
 			thetaL 		= 0.0f;		maxL 		= 0.5f;
-			cutoff 		= 0.001; 	roll 		= new term::axis((n)=>roll.input=n);
+			cutoff 		= 0.001; 	roll 		= new util::axis((n)=>roll.input=n);
 		}
 
 		public void Start() {
