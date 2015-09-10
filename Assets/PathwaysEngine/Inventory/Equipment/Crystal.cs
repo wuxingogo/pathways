@@ -126,7 +126,7 @@ namespace PathwaysEngine.Inventory {
 		}
 
 		public void Stow() { StartCoroutine(Holster(true)); }
-		public void Equip() { StartCoroutine(Holster(false)); }
+		public void Wear() { StartCoroutine(Holster(false)); }
 
 		internal IEnumerator Focus() {
 			float cViewField = mCAMR.fieldOfView;

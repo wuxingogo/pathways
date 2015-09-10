@@ -7,7 +7,8 @@ using invt=PathwaysEngine.Inventory;
 namespace PathwaysEngine.Movement.StateMachine {
 	public class FlashlightStowed : StateMachineBehaviour {
 		override public void OnStateExit(Animator a,AnimatorStateInfo asi,int i) {
-			((invt::Flashlight) Pathways.player.holdall.GetItemOfType<invt::Flashlight>()).on = false;
+			((invt::Flashlight) Player.left.objHand
+				.GetComponent<invt::Flashlight>()).on = false;
 		}
 	}
 }

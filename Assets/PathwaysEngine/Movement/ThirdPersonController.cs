@@ -234,6 +234,20 @@ namespace PathwaysEngine.Movement {
 			animator.SetLookAtWeight(1, 0.2f, 2.5f);
 			if (lookTarget!=null) currentLookPos = lookTarget.position;
 			animator.SetLookAtPosition(currentLookPos);	// used for the head look feature
+			if (Player.left.ikActive) {
+                if (Player.left.objHand!=null) { // Set the target position and rotation
+                    animator.SetIKPositionWeight(Player.left.handGoal,1);
+                    animator.SetIKRotationWeight(Player.left.handGoal,1);
+                    animator.SetIKPosition(
+                    	Player.left.handGoal,Player.left.objHand.position);
+                    animator.SetIKRotation(
+                    	Player.left.handGoal,Player.left.objHand.rotation);
+                }
+            } else {
+                animator.SetIKPositionWeight(Player.left.handGoal,0);
+                animator.SetIKRotationWeight(Player.left.handGoal,0);
+                //animator.SetLookAtWeight(0);
+            }
 		}
 
 		void SetUpAnimator() {

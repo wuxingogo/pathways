@@ -10,10 +10,10 @@ namespace PathwaysEngine.Movement {
 	public class Hand : MonoBehaviour {
 		public bool ikActive = false;
 		public Transform objHand = null;
-        protected Animator animator;
-        AvatarIKGoal handGoal;
+        public Animator animator;
+        public AvatarIKGoal handGoal;
 		public Hands hand = Hands.Left;
-		public invt::IEquippable heldItem;
+		public invt::IWieldable heldItem;
 		public util::key fire, lamp;
 
 		public Hand() {
@@ -21,7 +21,7 @@ namespace PathwaysEngine.Movement {
 			lamp = new util::key((n)=>lamp.input=n);
 		}
 
-		public void SwitchItem(invt::IEquippable item) {
+		public void SwitchItem(invt::IWieldable item) {
 		//	if (backpack && (heldItem!=null)) heldItem.Stow();
 		//	else heldItem.Drop();
 			heldItem = item;
@@ -33,7 +33,7 @@ namespace PathwaysEngine.Movement {
 		}
 
         void Start() {
-            animator = Player.animator; //GetComponent<Animator>();
+            animator = Player.animator;
             handGoal = (hand==Hands.Left)?
                 (AvatarIKGoal.LeftHand):(AvatarIKGoal.RightHand);
         }
@@ -42,22 +42,5 @@ namespace PathwaysEngine.Movement {
 			if (heldItem!=null && (hand==Hands.Left && lamp.input
 			|| hand==Hands.Right && fire.input)) heldItem.Use();
 		}
-
-        void OnAnimatorIK() {
-            if (animator) {
-                if (ikActive) {
-                    if (objHand!=null) { // Set the target position and rotation
-                        animator.SetIKPositionWeight(handGoal,1);
-                        animator.SetIKRotationWeight(handGoal,1);
-                        animator.SetIKPosition(handGoal,objHand.position);
-                        animator.SetIKRotation(handGoal,objHand.rotation);
-                    }
-                } else {
-                    animator.SetIKPositionWeight(handGoal,0);
-                    animator.SetIKRotationWeight(handGoal,0);
-                    //animator.SetLookAtWeight(0);
-                }
-            }
-        }
 	}
 }

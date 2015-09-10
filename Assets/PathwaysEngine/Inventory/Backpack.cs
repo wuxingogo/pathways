@@ -1,33 +1,31 @@
 /* Ben Scott * bescott@andrew.cmu.edu * 2015-07-07 * Backpack */
 
-using UnityEngine;			using type=System.Type;
-using System.Collections;	using System.Collections.Generic;
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace PathwaysEngine.Inventory {
-	public class Backpack : Bag, IEquippable {
-
-		~Backpack() { DropAll(); }
-
+	public class Backpack : Bag, IWearable {
 		public bool worn {
 			get { return _worn; }
 			set { _worn = value;
-				if (_worn) Equip();
+				if (_worn) Wear();
 				else Stow(); }
 		} bool _worn;
 
-		public uint uses { get; set; }
+		~Backpack() { DropAll(); }
 
-		public Backpack() { }
+		public override void Take() { base.Take(); Player.Wear(this); }
+		public override void Drop() { base.Drop(); Player.Stow(this); }
 
-		public void Use() { worn = !worn; }
-		public override void Take() { base.Take(); worn = true; }
-		//public override void Drop() { base.Drop(); worn = false; }
-		public void Equip() {
-			if (gameObject) gameObject.SetActive(true);
-			Player.Equip(this);
+		public void Wear() {
+			gameObject.SetActive(true);
+			Terminal.Log("You put on the backpack.\n",Formats.Command);
 		}
 
-		public void Stow() { gameObject.SetActive(false); }
-		public void DropAll() { foreach (var elem in this) elem.Drop(); }
+		public void Stow() {
+			Terminal.Log("You take off the backpack.\n",Formats.Command);
+			gameObject.SetActive(false);
+		}
 	}
-} // print("Stow!");
+}

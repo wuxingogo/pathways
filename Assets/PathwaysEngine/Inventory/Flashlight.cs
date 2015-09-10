@@ -5,14 +5,15 @@ using System.Collections;
 
 namespace PathwaysEngine.Inventory {
 	public class Flashlight : Lamp {
-		public new void Equip() {
-			print("asdf");
-			Terminal.Log("You turn on your flashlight.");
-			base.Equip();
+		public override void Wear() {
+			Terminal.Log(" > equip flashlight: You turn on your flashlight.\n",
+				Formats.Command);
+			base.Wear();
 		}
 
-		public new void Stow() {
-			Terminal.Log("You stow your flashlight.");
+		public override void Stow() {
+			Terminal.Log(" > stow flashlight: You put away your flashlight.\n",
+				Formats.Command);
 			base.Stow();
 		}
 	}

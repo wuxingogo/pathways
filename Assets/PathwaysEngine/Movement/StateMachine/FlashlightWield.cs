@@ -9,12 +9,9 @@ namespace PathwaysEngine.Movement.StateMachine {
 		invt::Flashlight flashlight;
 
 		override public void OnStateEnter(Animator a,AnimatorStateInfo asi,int i) {
-			flashlight = (invt::Flashlight) Pathways.player.holdall.GetItemOfType<invt::Flashlight>();
+			if (!flashlight)
+				flashlight = Player.left.objHand.GetComponent<invt::Flashlight>();
 			flashlight.worn = true;
 		}
-
-//		override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-//			flashlight.isOn = true;
-//		}
 	}
 }

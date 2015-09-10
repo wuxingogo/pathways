@@ -1,56 +1,12 @@
-/* Ben Scott * bescott@andrew.cmu.edu * 2015-07-28 * Bag */
+/* Ben Scott * bescott@andrew.cmu.edu * 2015-08-24 * Bag */
 
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using type=System.Type;
-using util=PathwaysEngine.Utilities;
 
 namespace PathwaysEngine.Inventory {
 	public class Bag : ItemCollection {
-		internal bool hasScreenControl, isIgnoringInput;
-		internal int radiusGet, layerItem, invItemValues;
-		internal float reUpdateTimer, reuptakeTimer;
-		LayerMask layerMask;
-		Flashlight cLight;
-		internal List<Item> nearItems;
-		internal Camera mCAMR;
-		util::key invt, menu;
-
-		public Bag() {
-			hasScreenControl = false; isIgnoringInput = false;
-			radiusGet 		 = 16;	  layerItem 	  = 16;
-			reUpdateTimer 	 = 0f;	  reuptakeTimer   = 3f;
-			invt = new util::key((n)=>invt.input=n);
-			menu = new util::key((n)=>menu.input=n);
-		}
-
-		public override void Awake() {
-			base.Awake(); //Pause.PausePlayer(false);
-			layerMask = LayerMask.NameToLayer("Items");
-		}
-
-		void Update() {
-			reuptakeTimer += Time.deltaTime;
-			if (!isIgnoringInput) {
-				if (!hasScreenControl && invt.input || menu.input) {
-					hasScreenControl = true; Pause.PausePlayer(true); }
-				else if (hasScreenControl && invt.input || menu.input) {
-					hasScreenControl = false; Pause.PausePlayer(false); }
-			} // StartCoroutine(InventorySlow());
-			//if (mCAMR) mCAMR.pixelRect = new Rect(Screen.width-320, 64, 256, 256);
-			//else mCAMR = GameObject.FindGameObjectWithTag("Map Camera").GetComponent<Camera>();
-		}
-
-		internal Item[] GetNearbyItems() {
-			Collider[] temp = Physics.OverlapSphere(
-				transform.position,8f,layerMask);
-			List<Item> items = new List<Item>();
-			foreach (Collider entity in temp)
-				if (entity.gameObject.GetComponent<Item>())
-					items.Add(entity.gameObject.GetComponent<Item>());
-			return items.ToArray();//typeof(Item) as Item[];
-		}
+		public void DropAll() { foreach (var item in this) item.Drop(); }
 
 #if IMPL
 		internal void ItemButton(IUsable item, int m) {

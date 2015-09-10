@@ -1,0 +1,128 @@
+%YAML 1.1
+%TAG !intf! _PathwaysEngine.Adventure.
+%TAG !maps! _PathwaysEngine.Adventure.Setting.
+---
+
+# Areas
+
+Lower_Pyramid: !maps!Area+yml &id_lower_pyramid
+  safe: false
+  level: 1
+  rooms:
+  - *id_antechamber
+  - *id_pyramid_foyer
+  - *id_pyramid_left_annex
+  - *id_pyramid_right_annex
+  areas:
+  - *id_upper_pyramid
+  desc:
+    formats: [ Refresh ]
+    nouns: lower|pyramid
+    description: "The first level of the pyramid."
+
+Upper_Pyramid: !maps!Area+yml &id_upper_pyramid
+  safe: false
+  level: 2
+  rooms:
+  - *id_counterpoint_roof
+  areas:
+  - *id_lower_pyramid
+  desc:
+    formats: [ Refresh ]
+    nouns: upper|pyramid
+    description: |
+      The upper levels of the pyramid peek slightly over the canopy, you would be suprised if you could see over anything once you reached the top.
+
+Counterpoint: !maps!Area+yml &id_counterpoint
+  safe: false
+  level: 3
+  rooms:
+  - *id_counterpoint_roof
+  - *id_counterpoint_4
+  - *id_counterpoint_3
+  - *id_counterpoint_hangar
+  - *id_counterpoint_core
+  - *id_barracks
+  desc:
+    formats: [ Refresh ]
+    nouns: complex|building|Counterpoint
+    description: |
+      The Counterpoint Industrial Complex was once one of the fastest missile construction factories around. It was the fist in what would become a net of factories modeled after it, created as a retaliatory measure against any potential foreign missile strikes. While conventions prohibit the storage of nuclear arms, these factories could construct such a countermeasure in a matter of days. Now that the surrounding area has been quarantined and abandoned, the foundations are beginning to show signs of their neglect.
+
+# Rooms
+
+Pyramid_Antechamber: !maps!Room+yml &id_antechamber
+  desc:
+    formats: [ Refresh ]
+    nouns: pyramid|(ante)?chamber|catacomb
+    description: |
+      The Living Pyramid glowers and glows at you from the main hall, and there's a very faint sound of wind, blowing from somewhere just outside the door.
+
+Pyramid_Foyer: !maps!Room+yml &id_pyramid_foyer
+  desc:
+    nouns: pyramid|foyer|hall
+    formats: [ Refresh ]
+    description: |
+      You enter the foyer, the rune yet radiates strange light into the dark passages, which twist away into the darkness.
+
+Left_Annex: !maps!Room+yml &id_pyramid_left_annex
+  desc:
+    nouns: left\s*(hall|annex|room)
+    description: "Just like the Right Annex, but scarier."
+    rand_descriptions:
+    - "You hear a weird noise, like someone whispering."
+    - "Something clatters, very quietly, somewhat far away."
+
+Right_Annex: !maps!Room+yml &id_pyramid_right_annex
+  desc:
+    nouns: right\s*(hall|annex|room)
+    description: "The hallway leading here was silent, and so is this room."
+
+Barracks: !maps!Room+yml &id_barracks
+  desc:
+    nouns: beds|barracks|troops
+    description: |
+      Barracks never get comfortable. You wake up feeling like you're being pushed over, as if no matter what direction you face, your head is being thrown forward into an iron plate. Your cot had a pillow when you stumbled in here last night.
+
+Counterpoint_Roof: !maps!Room+yml &id_counterpoint_roof
+  depth: 1
+  desc:
+    nouns: roof(top)?|floor
+    description: |
+      There's a fine mist in the air, and the wind blows faintly across the roof of this old industrial building. The humidity hasn't had the same effect on your flashlight as it has on your hair. You can hear the ocean, and can faintly see splashing, just on the edge of what you can make out in this fog. You need to make it to the so-called "Fortress", which you know to be actually *in* the cliffside, here. The entire facility used to bustle with activity, but the recent attacks have kept most activities indoors, inside the safety of the fort. Anaximander sent you up here from underground to retrieve a rather simple coupling from one of the cores.
+
+Counterpoint_Floor_4: !maps!Room+yml &id_counterpoint_4
+  depth: 1
+  desc:
+    nouns: room|floor
+    description: |
+      The 4th floor of this building seems to be mosty office space, but opens up into the main, circular space. Stairs go up to the Roof, and the top of the hangar is around the building and down some stairs.
+
+Counterpoint_Floor_3: !maps!Room+yml &id_counterpoint_3
+  depth: 1
+  desc:
+    nouns: room|floor
+    description: |
+      The third floor of this complex is palatial. It's comprised of a number of wide, gradual staircases, which end at the second floor and culminate with an immodest view of the central assembly.
+
+Counterpoint_Hangar: !maps!Room+yml &id_counterpoint_hangar
+  depth: 2
+  desc:
+    nouns: hangar|floor|room
+    description: |
+      The hangar is built to open up across the back for the latter design stage. Each floor has the same profile, and it goes down to the basement.
+
+Counterpoint_Core: !maps!Room+yml &id_counterpoint_core
+  depth: 3
+  desc:
+    nouns: core|floor|room
+    description: |
+      The centerpiece of this complex is a dauntingly deep well, which is encircled by platforms and catwalks from each floor. There are no handrails on the inside edges: under different circumstances, the center would have been occupied by completed rockets, or soon-to-be completed rockets. A derelict, half-constructed missile sits in the bay: it seems this place was abandoned in such a haste that nobody bothered to remove it.
+
+...
+
+#thing_base: "thing|object"
+#room_base: "room|floor|ceiling"
+#area_base: "area|sky|region|locale"
+
+

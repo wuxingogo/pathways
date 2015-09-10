@@ -1,21 +1,17 @@
 /* Ben Scott * bescott@andrew.cmu.edu * 2014-07-25 * Item Group */
 
 using UnityEngine;
-using System.Collections;    using System.Collections.Generic;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace PathwaysEngine.Inventory {
-	public class ItemGroup <T> : Item, IItemGroup <T> {
+	public class ItemGroup<T> : Item, IItemGroup <T> {
 		int radius = 4, layerItem = 16;
 
 		public uint count {
 			get { return _count; }
 			set { _count = (value==0)?(1):(value); }
 		} uint _count = 1;
-
-		public ItemGroup(T t) { }
-		public ItemGroup(T t, Item item) { }
-		public ItemGroup(T t, Item item, uint count) {
-			this.count = count; }
 
 		public void Group() {
 			// search my container and merge

@@ -1,6 +1,6 @@
 /* Ben Scott * bescott@andrew.cmu.edu * 2015-07-13 * Controls */
 
-using UnityEngine;  using UnityEngine.UI;
+using UnityEngine;
 
 namespace PathwaysEngine.Utilities {
 	public class Controls : MonoBehaviour {
@@ -34,8 +34,10 @@ namespace PathwaysEngine.Utilities {
 			axisX.@get = true;  axisY.@get = true;
 			roll.@get = true;   term.@get = true;
 			invt.@get = true;   menu.@get = true;
-			switch (Pathways.GameState) {
+			switch (Pathways.gameState) {
 				case GameStates.Game: break;
+				case GameStates.Msgs:
+					goto case GameStates.Term;
 				case GameStates.Term:
 					fire.@get = false;   fire.f(false);
 					lamp.@get = false;   lamp.f(false);
@@ -55,7 +57,7 @@ namespace PathwaysEngine.Utilities {
 				case GameStates.None:
 					menu.@get = false;   menu.f(false);
 					goto case GameStates.Menu;
-			} switch (Pathways.GameState) {
+			} switch (Pathways.gameState) {
 				case GameStates.Game :
 					fire.f(fire.@get && Input.GetButton("Fire1"));
 					lamp.f(lamp.@get && Input.GetButtonDown("Lamp"));

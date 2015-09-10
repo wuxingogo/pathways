@@ -1,11 +1,11 @@
 ﻿/* Ben Scott * bescott@andrew.cmu.edu * 2014-08-11 * Anchor */
 
 using UnityEngine;
-using mech=Mechanics;
+using intf=Adventure;
 
 namespace PathwaysEngine.Utilities {
 	public class Anchor : MonoBehaviour {
-		public mech::Corpus bodyPart;
+		public intf::Corpus bodyPart;
 		public Transform src;
 
 		void Start() {
