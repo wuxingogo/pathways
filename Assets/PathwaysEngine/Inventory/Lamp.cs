@@ -6,6 +6,7 @@ using mvmt=PathwaysEngine.Movement;
 using util=PathwaysEngine.Utilities;
 
 namespace PathwaysEngine.Inventory {
+	[RequireComponent(typeof(Animator))]
 	public partial class Lamp : Item, IWieldable {
 		bool wait = false;
 		public AudioClip auSwitch;

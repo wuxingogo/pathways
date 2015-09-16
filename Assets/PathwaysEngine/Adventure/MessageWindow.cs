@@ -11,10 +11,8 @@ namespace PathwaysEngine {
 	public class MessageWindow : MonoBehaviour {
 		static ui::Text message_title, message_body;
 
-		public MessageWindow() {
-			Pathways.StateChange += new StateHandler(EventListener); }
-
 		void Awake() {
+			Pathways.StateChange += new StateHandler(EventListener);
 			Pathways.messageWindow = this;
 			foreach (var child in GetComponentsInChildren<ui::Text>())
 				if (child.name=="Title") message_title = child;

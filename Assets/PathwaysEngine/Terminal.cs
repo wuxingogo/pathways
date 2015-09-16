@@ -44,12 +44,7 @@ namespace PathwaysEngine {
 			}
 		}
 
-		public Terminal() {
-			Pathways.StateChange += new StateHandler(EventListener);
-			term = new util::key((n)=> {
-				if (!wait && n && !term.input) StartCoroutine(Term());
-				term.input = n;});
-		}
+		public Terminal() { }
 
 		public void EventListener(
 		object sender,System.EventArgs e,GameStates gameState) {
@@ -65,6 +60,13 @@ namespace PathwaysEngine {
 		}
 
 		void Awake() {
+			Pathways.StateChange += new StateHandler(EventListener);
+			term = new util::key((n)=> {
+				if (!wait && n && !term.input) StartCoroutine(Term());
+				term.input = n;}); // were in constructor
+
+
+
 			Pathways.terminal = this;
 			rect = GetComponent<RectTransform>();
 			inputField = GetComponentInChildren<ui::InputField>();

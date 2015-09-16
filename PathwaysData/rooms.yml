@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !maps! _PathwaysEngine.Adventure.Setting.
+---
+
+pyramid_antechamber: !maps!Room+yml
+  nouns: pyramid|(ante)?chamber|catacomb
+  desc: |
+    You fall through the door, cold from either blood loss or the weather. Was it the weather, or did the fall break something open? *Is it really raining, out there?* You're not sure about... anything. *You were just out there.* It wasn't raining, you aren't even wet. Everything is ok. It is very dark and you feel the quiet, safe, very safe, and dark...
+    You wake up dreaming in a distantly reminiscent setting. It must be... No, you can't quite place it, but you feel an unusual fondness for it. You are inside an ancient barrow hidden deep within a dark forest. The barrow opens into a narrow tunnel at its southern end. You can see a faint glow at the far end. A strangely familiar brass lantern is lying on the ground, next to a sword of Elvish workmanship. And then it all changes again, your vision is blurry, and the room is swirling, and mixing...
+    Shuddering, you sit up. There is a surfacial laceration on your inner calf, and while there's some blood in the sand, it's clotted up nicely. You're still dizzy, but at least now you know why. With difficulty, you recall the unfortunate circumstances that lead you to this strange place. Having been thoroughly let down by your primary parachute, and being that your reach towards the secondary was not worthy of any speed records, your tumble around that conifer resulted in a number of perforations. In aggregate, you can definitly feel them, but you haven't yet found all the little holes in yourself yet. That *goddamn* tree, who put it there? Why? Your anger at this particular *pinus oocarpa* points out to you that the kind of tree in question simply doesn't grow anywhere near here. You recall that most of the pines are found much closer inland, and typically on the Pacific side of the mountains... This is just another example of an alarming number of strange things you've noticed recently. Regaining control over yourself after your frustration with that imprudent tree, you're conscious enough to take an inventory of your situation. You recall tossing your bent M-16 into the woods, however you don't recall throwing the bag of clips out with it, but alas, they are nowhere to be found. Your rations, also, seem to have run away. Most of your walk into the pyramid seems a blur, but at least you're here. For a moment, you see a strange bronze lantern on the ground, but when you blink, you find your flashlight in front of you, and still on.It's pointing down a narrow tunnel, with your M9 Bayonet next to it. You look at the knife again, and for just a moment, it seemed to be reflecting blue light, but then it was gone. Must've been some ambient something or other. You pick them up and examine the extremely concerning and shiny door that closed behind you under its own volition when you stumbled through.
+
+barracks_init: !maps!Room+yml
+  nouns: beds|barracks|troops
+  desc: |
+    ## Barracks ##
+    Barracks never get comfortable. You wake up feeling like you're being pushed over, as if no matter what direction you face, your head is being thrown forward into an iron plate. Your cot had a pillow when you stumbled in here last night.
+
+counterpoint_roof: !maps!Room+yml
+  nouns: roof(top)?|counterpoint|building|floor|complex
+  desc: |
+    ### Counterpoint Rooftop ###
+    There's a fine mist in the air, and the wind blows faintly across the roof of this old industrial building. The humidity hasn't had the same effect on your flashlight as it has on your hair. You can hear the ocean, and can faintly see splashing, just on the edge of what you can make out in this fog. You need to make it to the so-called "Fortress", which you know to be actually *in* the cliffside, here. The entire facility used to bustle with activity, but the recent attacks have kept most activities indoors, inside the safety of the fort. Anaximander sent you up here from underground to retrieve a rather simple coupling from one of the cores.
+
+...

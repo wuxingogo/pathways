@@ -6,13 +6,13 @@ using System.Collections.Generic;
 
 namespace PathwaysEngine.Adventure.Setting {
 	public class Connector : Thing {
-		public Room src, tgt;
+		public Room room_src, room_tgt;
 
 		public override Desc<Thing> desc {get;set;}
 
 		public string desc_type {
-			get { return string.Format("{0} {1}",_desc_type,(src!=null && tgt!=null)
-				? string.Format("It goes between {0} and {1}.",src,tgt)
+			get { return string.Format("{0} {1}",_desc_type,(room_src!=null && room_tgt!=null)
+				? string.Format("It goes between {0} and {1}.",room_src,room_tgt)
 				: "It doesn't seem to go anywhere."); }
 			set { _desc_type = value; }
 		} string _desc_type;

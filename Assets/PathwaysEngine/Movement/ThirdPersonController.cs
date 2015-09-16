@@ -212,6 +212,7 @@ namespace PathwaysEngine.Movement {
 		}
 
 		void UpdateAnimator() {
+			if (!animator || !animator.enabled) return;
 			animator.applyRootMotion = onGround;
 			animator.SetFloat("Forward", forwardAmount, 0.1f, Time.deltaTime);
 			animator.SetFloat("Turn", turnAmount, 0.1f, Time.deltaTime);

@@ -54,13 +54,13 @@ namespace PathwaysEngine { //[Flags]
 			mainCamera = Camera.main;
 			gameDate = new DateTime(1994,5,8,2,0,0);
 			finalDate = new DateTime(1994,5,13,14,0,0);
-			StateChange += new StateHandler(EventListener);
 		} /*(Application.LoadLevel(1);*/
 
 		public static void OnStateChange( // master event
 		System.EventArgs e,GameStates gameState) {
 			if (StateChange!=null)
 				StateChange(default (object),e,gameState);
+			else StateChange += new StateHandler(EventListener);
 		}
 
 		public static void EventListener(
@@ -71,6 +71,8 @@ namespace PathwaysEngine { //[Flags]
 
 		public static void Log(string s) {
 			Terminal.Log((intf::Message) yaml.data[s]); }
+
+		public static void Sudo(command cmd) { }
 
 		public static void Redo(command cmd) { intf::Parser.eval(cmd.input); }
 
@@ -110,9 +112,14 @@ namespace PathwaysEngine { //[Flags]
 			static yaml() {
 				data = new Dictionary<string,object>();
 				var deserializer = new Deserializer();
+#if UNITY_EDITOR
 				foreach (var elem in Directory.GetFiles(
 						Directory.GetCurrentDirectory()
-						+"/Assets/PathwaysEngine/Data/","*.yml")) {
+						+"/Assets/PathwaysEngine/Resources/","*.txt")) {
+#else
+				foreach (var elem in Directory.GetFiles(
+						Application.dataPath+"/Resources/","*.txt")) {
+#endif
 					if (!File.Exists(elem))
 						throw new System.Exception("YAML: 404");
 					var buffer = new Buffer();
@@ -265,6 +272,7 @@ namespace PathwaysEngine { //[Flags]
 
 			static Parser() {
 				var temp = new List<command> {
+					new command("sudo", Pathways.Sudo,@"\bsudo\s+"),
 					new command("quit", Pathways.Quit,@"\b(quit|restart)\b"),
 					new command("again", Pathways.Redo,@"\b(again|redo)\b"),
 					new command("load", Pathways.Load,@"\b(load|restore)\b"),

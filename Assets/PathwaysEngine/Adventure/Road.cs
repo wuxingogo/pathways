@@ -6,11 +6,11 @@ using System.Collections.Generic;
 
 namespace PathwaysEngine.Adventure.Setting {
 	public class Road : Connector {
-		public new Area src, tgt;
+		public Area area_src, area_tgt;
 
 		public new void OnTriggerEnter(Collider other) {
 			base.OnTriggerEnter(other);
-			if (other.tag=="Player") Player.Goto(tgt);
+			if (other.tag=="Player") Player.Goto(area_tgt);
 		}
 	}
 }
